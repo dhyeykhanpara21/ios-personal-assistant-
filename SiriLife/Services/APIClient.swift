@@ -28,8 +28,20 @@ public struct GenericResponse<T: Codable>: Codable {
 public final class APIClient {
     public static let shared = APIClient()
     
-    // Configurable base URL; defaults to local development server
-    public var baseURLString: String = "http://localhost:3000"
+    // Configurable base URL; defaults to local or cloud, and persists user custom server
+    public var baseURLString: String {
+        get {
+            if let custom = UserDefaults.standard.string(forKey: "luphonix_backend_url"), !custom.isEmpty {
+                return custom
+            }
+            return _defaultBaseURL
+        }
+        set {
+            _defaultBaseURL = newValue
+            UserDefaults.standard.set(newValue, forKey: "luphonix_backend_url")
+        }
+    }
+    private var _defaultBaseURL: String = "http://localhost:3000"
     
     private let session: URLSession
     private let encoder: JSONEncoder

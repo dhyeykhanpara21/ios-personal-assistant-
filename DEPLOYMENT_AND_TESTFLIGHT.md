@@ -55,17 +55,25 @@ You will see:
 
 ---
 
-## 2. Deploying the Hono Backend
+## 2. Deploying the Hono Backend on Vercel
 
-The Luphonix backend is lightweight, stateless, and optimized for serverless edge platforms or container runtimes.
+The Luphonix backend is optimized as serverless functions on **Vercel** with native **Turso (libSQL)** HTTP connection support.
 
-Set environment variables in your deployment dashboard:
-- `PORT=3000`
-- `NODE_ENV=production`
-- `TURSO_DATABASE_URL=libsql://luphonix-prod-...`
-- `TURSO_AUTH_TOKEN=your_turso_token`
-- `JWT_SECRET=your_32_character_random_hex_key`
-- `ALLOWED_ORIGIN=*`
+### Deploying via Vercel CLI (1-command):
+```bash
+cd backend
+npx -y vercel --prod
+```
+
+### Deploying via Vercel Dashboard:
+1. Connect the GitHub repository at [vercel.com](https://vercel.com).
+2. Set **Root Directory** to `backend`.
+3. Add environment variables:
+   - `TURSO_DATABASE_URL=libsql://ios-assistent-dkios.aws-ap-south-1.turso.io`
+   - `TURSO_AUTH_TOKEN=[your_turso_token]`
+   - `JWT_SECRET=super-secret-luphonix-jwt-key-dev-only-32-chars-long`
+   - `ALLOWED_ORIGIN=*`
+4. Click **Deploy**. Your live endpoint will be `https://[your-app].vercel.app`.
 
 ---
 

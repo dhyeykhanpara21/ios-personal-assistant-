@@ -1,9 +1,9 @@
 import { Context, Next } from 'hono';
 import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
-import { AuthPayload } from '../types/index.js';
+import { AuthPayload, AppEnv } from '../types/index.js';
 
-export async function authMiddleware(c: Context, next: Next) {
+export async function authMiddleware(c: Context<AppEnv>, next: Next) {
   const authHeader = c.req.header('Authorization');
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

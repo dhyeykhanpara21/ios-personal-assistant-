@@ -6,8 +6,9 @@ import { randomUUID } from 'node:crypto';
 import { db } from '../db/client.js';
 import { config } from '../config.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { AppEnv } from '../types/index.js';
 
-const authApp = new Hono();
+const authApp = new Hono<AppEnv>();
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -65,7 +66,7 @@ authApp.post('/register', async (c) => {
   ]);
 
   const token = jwt.sign({ userId, email }, config.JWT_SECRET, {
-    expiresIn: config.JWT_EXPIRES_IN,
+    expiresIn: config.JWT_EXPIRES_IN as any,
   });
 
   return c.json({
@@ -111,7 +112,7 @@ authApp.post('/login', async (c) => {
   const token = jwt.sign(
     { userId: row.id as string, email: row.email as string },
     config.JWT_SECRET,
-    { expiresIn: config.JWT_EXPIRES_IN }
+    { expiresIn: config.JWT_EXPIRES_IN as any }
   );
 
   return c.json({

@@ -14,7 +14,7 @@ async function startServer() {
       port: config.PORT,
     });
   } catch (err) {
-    console.error('Failed to start SiriLife API Server:', err);
+    console.error('Failed to start Luphonix API Server:', err);
     process.exit(1);
   }
 }

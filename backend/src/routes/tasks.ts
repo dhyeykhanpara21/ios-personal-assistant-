@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { db } from '../db/client.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { AppEnv } from '../types/index.js';
 
-const tasksApp = new Hono();
+const tasksApp = new Hono<AppEnv>();
 tasksApp.use('*', authMiddleware);
 
 const taskInputSchema = z.object({

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "buildCommand": "cd backend && npm install && npm run build",
+  "installCommand": "cd backend && npm install",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/backend/api"
+    }
+  ]
+}

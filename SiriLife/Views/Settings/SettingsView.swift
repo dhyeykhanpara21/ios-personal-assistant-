@@ -4,6 +4,7 @@ import UserNotifications
 public struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @ObservedObject private var authManager = AuthManager.shared
+    @AppStorage("luphonix_backend_url") private var backendUrl: String = ""
     
     let intervals = [30, 60, 90, 120]
     
@@ -14,6 +15,9 @@ public struct SettingsView: View {
             Form {
                 // Section: Notification Status
                 notificationStatusSection
+                
+                // Section: Cloud Backend & Server
+                serverConfigSection
                 
                 // Section: User Profile & Cloud Sync
                 profileSection
@@ -89,6 +93,31 @@ public struct SettingsView: View {
                     .foregroundColor(.blue)
                 }
                 .padding(.vertical, 4)
+            }
+        }
+    }
+    
+    // MARK: - Server Configuration Section
+    private var serverConfigSection: some View {
+        Section(
+            header: Text("Cloud Backend (Vercel)"),
+            footer: Text("Paste your deployed Vercel URL (e.g. https://your-project.vercel.app) to connect everywhere over 5G/Wi-Fi.")
+        ) {
+            HStack {
+                Label("Platform", systemImage: "cloud.fill")
+                Spacer()
+                Text("Vercel Serverless")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            HStack {
+                Image(systemName: "link")
+                    .foregroundColor(.blue)
+                TextField("https://your-api.vercel.app", text: $backendUrl)
+                    .font(.subheadline)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
             }
         }
     }

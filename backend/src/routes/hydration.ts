@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { db } from '../db/client.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { AppEnv } from '../types/index.js';
 
-const hydrationApp = new Hono();
+const hydrationApp = new Hono<AppEnv>();
 hydrationApp.use('*', authMiddleware);
 
 const logSchema = z.object({

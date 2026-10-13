@@ -65,3 +65,10 @@ export interface AuthPayload {
   userId: string;
   email: string;
 }
+
+export type AppEnv = {
+  Variables: {
+    userId: string;
+    email: string;
+  };
+};

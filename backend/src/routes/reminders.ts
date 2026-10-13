@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { db } from '../db/client.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { AppEnv } from '../types/index.js';
 
-const remindersApp = new Hono();
+const remindersApp = new Hono<AppEnv>();
 remindersApp.use('*', authMiddleware);
 
 const reminderInputSchema = z.object({

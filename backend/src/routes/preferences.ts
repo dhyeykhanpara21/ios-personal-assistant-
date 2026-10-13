@@ -2,8 +2,9 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db/client.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { AppEnv } from '../types/index.js';
 
-const preferencesApp = new Hono();
+const preferencesApp = new Hono<AppEnv>();
 preferencesApp.use('*', authMiddleware);
 
 const prefUpdateSchema = z.object({

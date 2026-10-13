@@ -1,10 +1,8 @@
 import { Hono } from 'hono';
-import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { config } from './config.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { runMigrations } from './db/migrate.js';
 
 import authApp from './routes/auth.js';
 import tasksApp from './routes/tasks.js';
