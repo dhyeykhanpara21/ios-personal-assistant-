@@ -17,13 +17,30 @@ jobs:
       - name: Select Xcode 15/16
         run: sudo xcode-select -s /Applications/Xcode_15.4.app
 
-      - name: Build SiriLife iOS App
+      - name: Validate Source Files
+        run: |
+          missing=0
+          for f in SiriLife/Views/Auth/AuthView.swift SiriLife/Views/Settings/SettingsView.swift SiriLife/Views/Dashboard/DashboardView.swift; do
+            if [ ! -f "$f" ]; then
+              echo "❌ Missing source file: $f"
+              missing=1
+            fi
+          done
+          if [ $missing -eq 1 ]; then
+            echo "Exiting due to missing source files."
+            exit 1
+          fi
+          echo "✅ All required source files verified."
+
+      - name: Build SiriLife iOS App & Generate Release Binary
         run: |
           xcodebuild clean build \
             -project SiriLife.xcodeproj \
             -scheme SiriLife \
+            -configuration Release \
             -destination 'generic/platform=iOS' \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            CONFIGURATION_BUILD_DIR=build/Release-iphoneos
 
       - name: Run iOS Unit Tests
         run: |
@@ -32,3 +49,15 @@ jobs:
             -scheme SiriLife \
             -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Package Luphonix IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/Release-iphoneos/SiriLife.app Payload/
+          zip -r Luphonix.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Luphonix-iOS-App
+          path: Luphonix.ipa
