@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import AppIntents
 
 // MARK: - Priority
 public enum Priority: String, Codable, CaseIterable, Identifiable {
@@ -153,4 +154,39 @@ public enum TaskSort: String, CaseIterable, Identifiable {
     case title = "Title"
     
     public var id: String { rawValue }
+}
+
+// MARK: - AppIntents Conformance
+extension Priority: AppEnum {
+    public static var typeDisplayRepresentation: TypeDisplayRepresentation = "Priority"
+    
+    public static var caseDisplayRepresentations: [Priority: DisplayRepresentation] = [
+        .low: DisplayRepresentation(title: "Low"),
+        .medium: DisplayRepresentation(title: "Medium"),
+        .high: DisplayRepresentation(title: "High")
+    ]
+}
+
+extension RecurrenceRule: AppEnum {
+    public static var typeDisplayRepresentation: TypeDisplayRepresentation = "Repeat Frequency"
+    
+    public static var caseDisplayRepresentations: [RecurrenceRule: DisplayRepresentation] = [
+        .none: DisplayRepresentation(title: "Never"),
+        .daily: DisplayRepresentation(title: "Daily"),
+        .weekly: DisplayRepresentation(title: "Weekly"),
+        .weekdays: DisplayRepresentation(title: "Every Weekday"),
+        .hourly: DisplayRepresentation(title: "Every Hour")
+    ]
+}
+
+extension ItemCategory: AppEnum {
+    public static var typeDisplayRepresentation: TypeDisplayRepresentation = "Category"
+    
+    public static var caseDisplayRepresentations: [ItemCategory: DisplayRepresentation] = [
+        .personal: DisplayRepresentation(title: "Personal"),
+        .work: DisplayRepresentation(title: "Work"),
+        .study: DisplayRepresentation(title: "Study"),
+        .health: DisplayRepresentation(title: "Health"),
+        .other: DisplayRepresentation(title: "Other")
+    ]
 }

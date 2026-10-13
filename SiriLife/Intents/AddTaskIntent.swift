@@ -8,10 +8,10 @@ public struct AddTaskIntent: AppIntent {
     @Parameter(title: "Task Title", requestValueDialog: "What task would you like to add?")
     public var title: String
     
-    @Parameter(title: "Due Date & Time", default: nil)
+    @Parameter(title: "Due Date & Time")
     public var dueAt: Date?
     
-    @Parameter(title: "Priority", default: Priority.medium)
+    @Parameter(title: "Priority", default: .medium)
     public var priority: Priority
     
     public init() {}
@@ -22,7 +22,7 @@ public struct AddTaskIntent: AppIntent {
         self.priority = priority
     }
     
-    public func perform() async throws -> some ProvidesDialog & ReturnsValue<TaskItem> {
+    public func perform() async throws -> some ProvidesDialog & ReturnsValue<String> {
         let task = TaskItem(
             title: title,
             dueAt: dueAt,
@@ -43,6 +43,6 @@ public struct AddTaskIntent: AppIntent {
             dialogMessage = "Added task '\(title)' to your Luphonix tasks."
         }
         
-        return .result(value: task, dialog: IntentDialog(dialogMessage))
+        return .result(value: task.title, dialog: IntentDialog(dialogMessage))
     }
 }

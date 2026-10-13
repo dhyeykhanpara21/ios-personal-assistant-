@@ -11,7 +11,7 @@ public struct AddReminderIntent: AppIntent {
     @Parameter(title: "Time", requestValueDialog: "At what time should I remind you?")
     public var scheduledAt: Date
     
-    @Parameter(title: "Repeat Frequency", default: RecurrenceRule.none)
+    @Parameter(title: "Repeat Frequency", default: .none)
     public var recurrenceRule: RecurrenceRule
     
     public init() {}
@@ -22,7 +22,7 @@ public struct AddReminderIntent: AppIntent {
         self.recurrenceRule = recurrenceRule
     }
     
-    public func perform() async throws -> some ProvidesDialog & ReturnsValue<ReminderItem> {
+    public func perform() async throws -> some ProvidesDialog & ReturnsValue<String> {
         let reminder = ReminderItem(
             title: title,
             scheduledAt: scheduledAt,
@@ -40,6 +40,6 @@ public struct AddReminderIntent: AppIntent {
         let timeString = formatter.string(from: scheduledAt)
         
         let dialogMessage: LocalizedStringResource = "Scheduled a reminder in Luphonix to '\(title)' at \(timeString)."
-        return .result(value: reminder, dialog: IntentDialog(dialogMessage))
+        return .result(value: reminder.title, dialog: IntentDialog(dialogMessage))
     }
 }
