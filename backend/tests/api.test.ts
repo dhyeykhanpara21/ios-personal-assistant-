@@ -1,0 +1,246 @@
+process.env.NODE_ENV = 'test';
+import { describe, it, before } from 'node:test';
+import assert from 'node:assert';
+import app from '../src/index.js';
+import { runMigrations } from '../src/db/migrate.js';
+
+describe('Luphonix Backend API Test Suite', async () => {
+  before(async () => {
+    await runMigrations();
+  });
+  let authToken = '';
+  let createdTaskId = '';
+  let createdReminderId = '';
+  const testEmail = `test_${Date.now()}@luphonix.app`;
+
+  it('1. GET /health should return 200 OK', async () => {
+    const res = await app.request('/health');
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.status, 'healthy');
+    assert.strictEqual(body.database, 'Turso (libSQL)');
+  });
+
+  it('2. POST /api/auth/register should create user and return JWT', async () => {
+    const res = await app.request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Alex Mercer',
+        email: testEmail,
+        password: 'Password123!',
+        timezone: 'America/New_York',
+      }),
+    });
+
+    assert.strictEqual(res.status, 201);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.ok(body.data.token);
+    assert.strictEqual(body.data.user.email, testEmail);
+    authToken = body.data.token;
+  });
+
+  it('3. POST /api/auth/login should return valid JWT', async () => {
+    const res = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: testEmail,
+        password: 'Password123!',
+      }),
+    });
+
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.ok(body.data.token);
+  });
+
+  it('4. POST /api/tasks should create a new task', async () => {
+    const dueTime = new Date(Date.now() + 3600000).toISOString();
+    const res = await app.request('/api/tasks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        title: 'Review Luphonix Architecture Specs',
+        description: 'Verify App Intents and Turso libSQL schema',
+        due_at: dueTime,
+        priority: 'high',
+        category: 'work',
+        is_completed: false,
+      }),
+    });
+
+    assert.strictEqual(res.status, 201);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.strictEqual(body.data.title, 'Review Luphonix Architecture Specs');
+    assert.strictEqual(body.data.priority, 'high');
+    createdTaskId = body.data.id;
+  });
+
+  it('5. GET /api/tasks should list tasks with filtering', async () => {
+    const res = await app.request('/api/tasks?filter=today', {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.ok(body.count >= 1);
+  });
+
+  it('6. PATCH /api/tasks/:id should update task status', async () => {
+    const res = await app.request(`/api/tasks/${createdTaskId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        is_completed: true,
+      }),
+    });
+
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.strictEqual(body.data.is_completed, true);
+  });
+
+  it('7. POST /api/reminders should create a recurring reminder', async () => {
+    const scheduledTime = new Date(Date.now() + 7200000).toISOString();
+    const res = await app.request('/api/reminders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        title: 'Drink 250ml of Water',
+        description: 'Hourly hydration check',
+        scheduled_at: scheduledTime,
+        recurrence_rule: 'daily',
+        category: 'health',
+        is_enabled: true,
+      }),
+    });
+
+    assert.strictEqual(res.status, 201);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.strictEqual(body.data.title, 'Drink 250ml of Water');
+    createdReminderId = body.data.id;
+  });
+
+  it('8. POST /api/reminders/:id/snooze should snooze reminder', async () => {
+    const res = await app.request(`/api/reminders/${createdReminderId}/snooze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ minutes: 20 }),
+    });
+
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.ok(body.scheduled_at);
+  });
+
+  it('9. POST /api/hydration should log water intake', async () => {
+    const res = await app.request('/api/hydration', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        amount_ml: 350,
+      }),
+    });
+
+    assert.strictEqual(res.status, 201);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.strictEqual(body.data.amount_ml, 350);
+  });
+
+  it('10. GET /api/hydration/today should calculate progress and goal', async () => {
+    const res = await app.request('/api/hydration/today', {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.strictEqual(body.data.total_ml, 350);
+    assert.strictEqual(body.data.daily_goal_ml, 2000);
+    assert.strictEqual(body.data.remaining_ml, 1650);
+  });
+
+  it('11. PUT /api/preferences should update user preferences', async () => {
+    const res = await app.request('/api/preferences', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        daily_water_goal_ml: 2500,
+        water_reminder_interval_minutes: 45,
+        waking_time: '06:30',
+        sleeping_time: '23:00',
+        quiet_hours_enabled: true,
+      }),
+    });
+
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.strictEqual(body.data.daily_water_goal_ml, 2500);
+    assert.strictEqual(body.data.water_reminder_interval_minutes, 45);
+  });
+
+  it('12. GET /api/auth/export should export all user records', async () => {
+    const res = await app.request('/api/auth/export', {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.ok(body.data.tasks.length >= 1);
+    assert.ok(body.data.reminders.length >= 1);
+    assert.ok(body.data.hydration_logs.length >= 1);
+  });
+
+  it('13. POST /api/sync should perform delta cloud synchronization', async () => {
+    const res = await app.request('/api/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        last_synced_at: new Date(Date.now() - 86400000).toISOString(),
+        tasks: [],
+        reminders: [],
+        hydration_logs: [],
+      }),
+    });
+
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.ok(body.sync_timestamp);
+    assert.ok(body.data.tasks.length >= 1);
+    assert.ok(body.data.reminders.length >= 1);
+  });
+});
+
