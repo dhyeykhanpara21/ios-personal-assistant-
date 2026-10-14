@@ -153,6 +153,10 @@ async function handleWaterLog(c: any) {
   const remaining = Math.max(0, dailyGoal - totalDrunk);
   const msg = `Logged ${amount_ml} ml in Luphonix. Total today: ${totalDrunk} ml of ${dailyGoal} ml goal.`;
 
+  if (c.req.query('format') === 'text' || c.req.query('text') === '1' || c.req.header('accept')?.includes('text/plain')) {
+    return c.text(msg);
+  }
+
   return c.json(
     {
       success: true,

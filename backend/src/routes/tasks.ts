@@ -96,6 +96,10 @@ tasksApp.get('/', async (c) => {
     summary = `You have ${tasks.length} task${tasks.length === 1 ? '' : 's'}: ${titles}${more}.`;
   }
 
+  if (c.req.query('format') === 'text' || c.req.query('text') === '1' || c.req.header('accept')?.includes('text/plain')) {
+    return c.text(summary);
+  }
+
   return c.json({
     success: true,
     count: tasks.length,

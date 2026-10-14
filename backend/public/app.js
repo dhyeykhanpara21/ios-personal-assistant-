@@ -625,7 +625,7 @@
     if (waterBtn) {
       waterBtn.addEventListener('click', async () => {
         const key = await ensureApiKey();
-        const url = `${base}/api/hydration?amount=250&apiKey=${encodeURIComponent(key)}`;
+        const url = `${base}/api/hydration?amount=250&format=text&apiKey=${encodeURIComponent(key)}`;
         navigator.clipboard.writeText(url).then(() => {
           showToast('Copied Water Webhook URL (with API key)!', 'success');
         });
@@ -635,7 +635,7 @@
     if (tasksBtn) {
       tasksBtn.addEventListener('click', async () => {
         const key = await ensureApiKey();
-        const url = `${base}/api/tasks?filter=today&apiKey=${encodeURIComponent(key)}`;
+        const url = `${base}/api/tasks?filter=today&format=text&apiKey=${encodeURIComponent(key)}`;
         navigator.clipboard.writeText(url).then(() => {
           showToast('Copied Tasks Webhook URL (with API key)!', 'success');
         });
