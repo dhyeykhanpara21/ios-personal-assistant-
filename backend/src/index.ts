@@ -47,8 +47,11 @@ app.route('/api/sync', syncApp);
 // Central Error Handler
 app.onError(errorHandler);
 
-// Root fallback to PWA
-app.get('/', (c) => c.redirect('/index.html'));
+import { getPwaHtml } from './pwaHtml.js';
+
+// Root fallback to PWA HTML directly
+app.get('/', (c) => c.html(getPwaHtml()));
+app.get('/index.html', (c) => c.html(getPwaHtml()));
 
 // Serve PWA Static Frontend
 app.use('/*', serveStatic({ root: './public' }));
