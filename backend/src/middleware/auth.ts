@@ -51,7 +51,24 @@ export async function authMiddleware(c: Context<AppEnv>, next: Next) {
 
   // 3. Check URL query parameters (?apiKey=... or ?token=... or ?key=...)
   if (!token) {
-    token = c.req.query('apiKey') || c.req.query('token') || c.req.query('key');
+    const raw = c.req.query('apiKey') || c.req.query('token') || c.req.query('key');
+    if (raw) {
+      try {
+        token = decodeURIComponent(raw).trim();
+      } catch {
+        token = raw.trim();
+      }
+    }
+  }
+
+  if (token) {
+    token = token.trim();
+    if (token.startsWith('"') && token.endsWith('"')) {
+      token = token.slice(1, -1).trim();
+    }
+    if (token.startsWith('Bearer ')) {
+      token = token.substring(7).trim();
+    }
   }
 
   if (!token) {

@@ -25,12 +25,23 @@ app.use(
   })
 );
 
-// Health check endpoint
-app.get('/health', (c) => {
+// Health check endpoint with database diagnostics
+app.get('/health', async (c) => {
+  let dbStatus = 'ok';
+  let dbError: string | null = null;
+  try {
+    const { db } = await import('./db/client.js');
+    const res = await db.execute('SELECT 1 as test');
+    dbStatus = 'connected (' + JSON.stringify(res.rows[0]) + ')';
+  } catch (err: any) {
+    dbStatus = 'error';
+    dbError = err.message;
+  }
   return c.json({
     status: 'healthy',
     service: 'Luphonix Backend API',
-    database: 'Turso (libSQL)',
+    database: dbStatus,
+    dbError,
     timestamp: new Date().toISOString(),
     version: '1.0.0',
   });

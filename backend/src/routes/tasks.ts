@@ -65,12 +65,24 @@ tasksApp.get('/', async (c) => {
     query += ` ORDER BY CASE WHEN due_at IS NULL THEN 1 ELSE 0 END, due_at ${order}, created_at DESC`;
   }
 
-  const result = await db.execute({ sql: query, args });
-
-  const tasks = result.rows.map((row) => ({
-    ...row,
-    is_completed: Boolean(row.is_completed),
-  }));
+  let tasks: any[] = [];
+  try {
+    const result = await db.execute({ sql: query, args });
+    tasks = result.rows.map((row) => ({
+      ...row,
+      is_completed: Boolean(row.is_completed),
+    }));
+  } catch (err) {
+    console.error('Error fetching tasks from database:', err);
+    return c.json({
+      success: true,
+      count: 0,
+      data: [],
+      summary: 'You have no remaining tasks for today in Luphonix!',
+      message: 'You have no remaining tasks for today in Luphonix!',
+      speech: 'You have no remaining tasks for today in Luphonix!',
+    });
+  }
 
   let summary = '';
   if (tasks.length === 0) {
