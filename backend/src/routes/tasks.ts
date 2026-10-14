@@ -9,10 +9,10 @@ const tasksApp = new Hono<AppEnv>();
 tasksApp.use('*', authMiddleware);
 
 const taskInputSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().min(1).optional(),
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().nullable().optional(),
-  due_at: z.string().datetime().nullable().optional(),
+  due_at: z.string().nullable().optional(),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
   category: z.enum(['personal', 'work', 'study', 'health', 'other']).default('other'),
   is_completed: z.boolean().default(false),
@@ -42,8 +42,9 @@ tasksApp.get('/', async (c) => {
     query += ' AND is_completed = 0 AND due_at IS NOT NULL AND due_at < ?';
     args.push(now);
   } else if (filter === 'today') {
-    query += ' AND is_completed = 0 AND due_at >= ? AND due_at <= ?';
-    args.push(todayStart.toISOString(), todayEnd.toISOString());
+    // Uncompleted tasks for today: includes tasks with no due date, or due today, or overdue
+    query += ' AND is_completed = 0 AND (due_at IS NULL OR due_at <= ?)';
+    args.push(todayEnd.toISOString());
   } else if (filter === 'upcoming') {
     query += ' AND is_completed = 0 AND due_at > ?';
     args.push(todayEnd.toISOString());

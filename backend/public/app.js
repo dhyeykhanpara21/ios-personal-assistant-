@@ -392,11 +392,12 @@
 
   function addTask(title, category, priority) {
     const newTask = {
-      id: 't_' + Date.now(),
+      id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 't_' + Date.now(),
       title: title.trim(),
       category: category || 'work',
       priority: priority || 'medium',
       is_completed: false,
+      due_at: new Date().toISOString(),
       created_at: new Date().toISOString()
     };
     state.tasks.unshift(newTask);
@@ -557,19 +558,58 @@
   }
 
   async function syncTaskToCloud(task) {
-    if (!state.prefs.backendUrl) return;
+    const base = state.prefs.backendUrl || window.location.origin;
     try {
       const key = await ensureApiKey();
-      await fetch(`${state.prefs.backendUrl}/api/tasks`, {
+      const payload = {
+        id: task.id,
+        title: task.title,
+        category: task.category || 'work',
+        priority: task.priority || 'medium',
+        is_completed: Boolean(task.is_completed),
+        due_at: task.due_at || new Date().toISOString()
+      };
+      const res = await fetch(`${base}/api/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${key}`
         },
-        body: JSON.stringify(task)
+        body: JSON.stringify(payload)
       });
+      if (!res.ok) {
+        console.warn('Task sync non-200:', res.status, await res.text());
+      }
     } catch (e) {
-      // Offline fallback silent catch
+      console.warn('Offline task fallback:', e);
+    }
+  }
+
+  async function syncAllWithCloud() {
+    const base = state.prefs.backendUrl || window.location.origin;
+    try {
+      const key = await ensureApiKey();
+      // Push local tasks up
+      if (Array.isArray(state.tasks) && state.tasks.length > 0) {
+        for (const t of state.tasks) {
+          await syncTaskToCloud(t);
+        }
+      }
+
+      // Pull cloud tasks down
+      const res = await fetch(`${base}/api/tasks?filter=all`, {
+        headers: { 'Authorization': `Bearer ${key}` }
+      });
+      if (res.ok) {
+        const body = await res.json();
+        if (body && Array.isArray(body.data) && body.data.length > 0) {
+          state.tasks = body.data;
+          saveStorage(STORAGE_KEY_TASKS, state.tasks);
+          renderTasks();
+        }
+      }
+    } catch (e) {
+      console.warn('Cloud sync error:', e);
     }
   }
 
@@ -930,6 +970,9 @@
     initEvents();
     ensureApiKey();
     registerServiceWorker();
+
+    // Auto-sync existing local tasks with cloud for Siri
+    setTimeout(syncAllWithCloud, 500);
 
     // Health ping test on load
     setTimeout(testBackendPing, 800);
