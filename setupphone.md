@@ -36,7 +36,7 @@ Since you are developing on **Windows** and using a **Free Apple ID**, you do **
    git push origin main
    ```
 2. Go to your GitHub repository in your web browser:
-   `https://github.com/dhyeykhanpara21/ios-personal-assistant-`
+   `https://github.com/luphonixtestimonials/ios-personal-assistant-`
 3. Click the **Actions** tab at the top.
 4. You will see the **"SiriLife iOS Build & IPA Release"** workflow running on a cloud Mac (`macos-14`).
    *(Or click "Run workflow" to start it manually anytime).*
