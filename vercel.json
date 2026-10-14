@@ -4,8 +4,17 @@
   "installCommand": "cd backend && npm install",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "destination": "/backend/api"
+    },
+    {
+      "source": "/health",
+      "destination": "/backend/api"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/public/$1"
     }
   ]
 }
+

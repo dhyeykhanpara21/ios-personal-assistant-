@@ -1,32 +1,50 @@
 # Luphonix — iPhone 16 Pro Complete Setup Guide
 
-This guide provides step-by-step instructions to install, connect, and use **Luphonix** on your **iPhone 16 Pro** with **Apple's built-in Siri** and your live **Turso Cloud Database**, **without enabling Developer Mode**, and with your backend deployed on **Vercel** for 5G access.
+This guide provides step-by-step instructions to install, connect, and use **Luphonix** on your **iPhone 16 Pro** with **Apple's built-in Siri** and your live **Turso Cloud Database**, with **ZERO Developer Mode**, no cables, no MacBook, and 100% free hosting on **Vercel**.
 
 ---
 
 ## 📋 Overview of What You Need
 
-1. **Your iPhone 16 Pro** (Running iOS 18+ / iOS 26+)
-2. **Your Live Turso Database** (Already connected & migrated at `libsql://ios-assistent-dkios.aws-ap-south-1.turso.io`)
-3. **Vercel** (Free cloud serverless hosting for anywhere 5G / Wi-Fi access)
-4. **Apple TestFlight** (The official Apple distribution method that runs **WITHOUT enabling Developer Mode**)
+1. **Your iPhone 16 Pro** (Running iOS 18+)
+2. **Safari on iPhone** (To add the Progressive Web App to your Home Screen)
+3. **Your Live Turso Database** (Already connected & migrated at `libsql://ios-assistent-dkios.aws-ap-south-1.turso.io`)
+4. **Vercel** (Free cloud serverless hosting for anywhere 5G / Wi-Fi access)
 
 ---
 
-## 🔒 Why You Do NOT Need Developer Mode (Apple TestFlight)
+## 🔒 Why the PWA Requires ZERO Developer Mode
 
-On iOS 16 and later, Apple introduced "Developer Mode" **strictly for direct USB sideloading** from untrusted computers. If you install an app via third-party sideloaders (AltStore, Sideloadly) or uncertified USB runs, iOS forces you to turn on Developer Mode, which displays security warnings and requires a full phone reboot.
+- **Official Apple Web Standard**: Progressive Web Apps (PWAs) run directly via Apple Safari’s WebKit engine.
+- **Zero Developer Mode**: You open the app link in Safari, tap **Share** → **Add to Home Screen**, and Luphonix installs immediately to your iPhone 16 Pro Home Screen.
+- **No Developer Mode prompt, no phone reboot, no 7-day expiration, and no security warnings.**
+- **Full Apple OLED Native Look**: Luphonix is styled with dark glassmorphism, responsive safe-area insets for Dynamic Island, full-screen standalone mode, and tactile audio feedback.
+- **Built-in Siri Integration**: Works with Apple's built-in **Shortcuts** app on your iPhone to execute voice commands (*"Hey Siri, log water in Luphonix"*).
 
-### The Solution: Apple TestFlight (Zero Developer Mode Required)
-- **Official Apple Distribution**: When Luphonix is uploaded to **Apple TestFlight** (via App Store Connect), Apple cryptographically signs the build with its official distribution certificate.
-- **Zero Developer Mode**: You download the official **TestFlight** app directly from the Apple App Store on your iPhone 16 Pro, tap **Install**, and the app opens immediately **with NO Developer Mode prompt, NO phone reboot, and NO security warnings**.
-- **Full System Access**: Apple's built-in Siri, App Intents, Action Button, and local notifications work natively at 100% capability.
 
 ---
 
-## 🚀 Part 1: Building & Installing Luphonix from Windows (No Mac Required)
+## 🚀 Part 1: Installing Luphonix on iPhone 16 Pro
 
-Since you are developing on **Windows** and using a **Free Apple ID**, you do **not need a MacBook**. GitHub Actions builds the iOS app on cloud Apple Silicon servers for you.
+### Method 1: Progressive Web App (Recommended — 0% Developer Mode, 0 Cables, 0 Reboots)
+
+This is the fastest, cleanest way to get Luphonix on your iPhone 16 Pro:
+
+1. **Deploy to Vercel** (or launch local server):
+   Once your Vercel URL is live (e.g. `https://luphonix-api.vercel.app`):
+2. **On your iPhone 16 Pro**:
+   - Open **Safari** and visit your deployment URL: `https://your-luphonix.vercel.app`
+   - Tap the **Share** button in Safari's bottom toolbar (the square icon with the upward arrow 📤).
+   - Scroll down and tap **"Add to Home Screen"** (➕).
+   - Tap **Add** in the top right corner.
+3. **Open Luphonix**:
+   - Tap the **Luphonix** icon on your Home Screen.
+   - It launches in **standalone mode** (full screen with no browser bars), with native haptics, water ring animations, task management, and live Turso database cloud sync.
+   - **No Developer Mode prompt, no Mac needed, and no 7-day expiration!**
+
+---
+
+### Method 2: Native IPA Sideloading (Requires Developer Mode + Sideloadly)
 
 ### Step 1: Trigger the Cloud Build on GitHub
 1. Commit and push your latest code to your GitHub repository:

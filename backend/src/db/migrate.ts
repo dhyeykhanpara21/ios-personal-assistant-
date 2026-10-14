@@ -10,7 +10,13 @@ export async function runMigrations() {
   const db = getDb();
   console.log('🔄 Running Turso database migrations...');
 
-  const schemaPath = path.join(__dirname, 'schema.sql');
+  let schemaPath = path.join(__dirname, 'schema.sql');
+  if (!fs.existsSync(schemaPath)) {
+    schemaPath = path.join(process.cwd(), 'src', 'db', 'schema.sql');
+  }
+  if (!fs.existsSync(schemaPath)) {
+    schemaPath = path.resolve(__dirname, '../../src/db/schema.sql');
+  }
   let schemaSql = fs.readFileSync(schemaPath, 'utf-8');
 
   // Strip line comments (-- ...)
