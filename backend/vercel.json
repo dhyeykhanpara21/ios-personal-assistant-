@@ -8,11 +8,6 @@
     {
       "source": "/health",
       "destination": "/api"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/public/$1"
     }
   ]
 }
-

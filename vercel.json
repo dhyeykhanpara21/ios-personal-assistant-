@@ -1,20 +1,13 @@
 {
   "version": 2,
-  "buildCommand": "cd backend && npm install && npm run build",
-  "installCommand": "cd backend && npm install",
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/backend/api"
+      "destination": "/api"
     },
     {
       "source": "/health",
-      "destination": "/backend/api"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/public/$1"
+      "destination": "/api"
     }
   ]
 }
-

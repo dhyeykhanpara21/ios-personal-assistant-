@@ -11,6 +11,9 @@
     "migrate": "tsx src/db/migrate.ts",
     "test": "tsx tests/api.test.ts"
   },
+  "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
     "@libsql/client": "^0.14.0",

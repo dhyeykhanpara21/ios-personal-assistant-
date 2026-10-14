@@ -1,0 +1,10 @@
+node_modules
+dev.db
+dist
+*.log
+api/*.js
+api/*.d.ts
+api/*.map
+src/**/*.js
+src/**/*.d.ts
+src/**/*.map
