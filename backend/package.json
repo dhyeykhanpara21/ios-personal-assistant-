@@ -7,9 +7,12 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "migrate": "tsx src/db/migrate.ts",
     "test": "tsx tests/api.test.ts"
+  },
+  "engines": {
+    "node": "22.x"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",

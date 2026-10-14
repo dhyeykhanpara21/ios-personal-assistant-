@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { config } from './config.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { serveStatic } from '@hono/node-server/serve-static';
 
 import authApp from './routes/auth.js';
 import tasksApp from './routes/tasks.js';
@@ -46,7 +47,16 @@ app.route('/api/sync', syncApp);
 // Central Error Handler
 app.onError(errorHandler);
 
-// 404 Route
+import { getPwaHtml } from './pwaHtml.js';
+
+// Root fallback to PWA HTML directly
+app.get('/', (c) => c.html(getPwaHtml()));
+app.get('/index.html', (c) => c.html(getPwaHtml()));
+
+// Serve PWA Static Frontend
+app.use('/*', serveStatic({ root: './public' }));
+
+// 404 Route for unmatched API calls
 app.notFound((c) => {
   return c.json({ success: false, error: 'Endpoint not found' }, 404);
 });

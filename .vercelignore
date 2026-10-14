@@ -1,0 +1,11 @@
+.git
+.github
+SiriLife
+SiriLife.xcodeproj
+SiriLifeTests
+backend/node_modules
+backend/dist
+backend/dev.db
+*.ipa
+*.zip
+*.log

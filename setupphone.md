@@ -1,55 +1,112 @@
 # Luphonix — iPhone 16 Pro Complete Setup Guide
 
-This guide provides step-by-step instructions to install, connect, and use **Luphonix** on your **iPhone 16 Pro** with **Apple's built-in Siri** and your live **Turso Cloud Database**, **without enabling Developer Mode**, and with your backend deployed on **Vercel** for 5G access.
+This guide provides step-by-step instructions to install, connect, and use **Luphonix** on your **iPhone 16 Pro** with **Apple's built-in Siri** and your live **Turso Cloud Database**, with **ZERO Developer Mode**, no cables, no MacBook, and 100% free hosting on **Vercel**.
 
 ---
 
 ## 📋 Overview of What You Need
 
-1. **Your iPhone 16 Pro** (Running iOS 18+ / iOS 26+)
-2. **Your Live Turso Database** (Already connected & migrated at `libsql://ios-assistent-dkios.aws-ap-south-1.turso.io`)
-3. **Vercel** (Free cloud serverless hosting for anywhere 5G / Wi-Fi access)
-4. **Apple TestFlight** (The official Apple distribution method that runs **WITHOUT enabling Developer Mode**)
+1. **Your iPhone 16 Pro** (Running iOS 18+)
+2. **Safari on iPhone** (To add the Progressive Web App to your Home Screen)
+3. **Your Live Turso Database** (Already connected & migrated at `libsql://ios-assistent-dkios.aws-ap-south-1.turso.io`)
+4. **Vercel** (Free cloud serverless hosting for anywhere 5G / Wi-Fi access)
 
 ---
 
-## 🔒 Why You Do NOT Need Developer Mode (Apple TestFlight)
+## 🔒 Why the PWA Requires ZERO Developer Mode
 
-On iOS 16 and later, Apple introduced "Developer Mode" **strictly for direct USB sideloading** from untrusted computers. If you install an app via third-party sideloaders (AltStore, Sideloadly) or uncertified USB runs, iOS forces you to turn on Developer Mode, which displays security warnings and requires a full phone reboot.
+- **Official Apple Web Standard**: Progressive Web Apps (PWAs) run directly via Apple Safari’s WebKit engine.
+- **Zero Developer Mode**: You open the app link in Safari, tap **Share** → **Add to Home Screen**, and Luphonix installs immediately to your iPhone 16 Pro Home Screen.
+- **No Developer Mode prompt, no phone reboot, no 7-day expiration, and no security warnings.**
+- **Full Apple OLED Native Look**: Luphonix is styled with dark glassmorphism, responsive safe-area insets for Dynamic Island, full-screen standalone mode, and tactile audio feedback.
+- **Built-in Siri Integration**: Works with Apple's built-in **Shortcuts** app on your iPhone to execute voice commands (*"Hey Siri, log water in Luphonix"*).
 
-### The Solution: Apple TestFlight (Zero Developer Mode Required)
-- **Official Apple Distribution**: When Luphonix is uploaded to **Apple TestFlight** (via App Store Connect), Apple cryptographically signs the build with its official distribution certificate.
-- **Zero Developer Mode**: You download the official **TestFlight** app directly from the Apple App Store on your iPhone 16 Pro, tap **Install**, and the app opens immediately **with NO Developer Mode prompt, NO phone reboot, and NO security warnings**.
-- **Full System Access**: Apple's built-in Siri, App Intents, Action Button, and local notifications work natively at 100% capability.
-
----
-
-## 🚀 Part 1: Installing Luphonix on iPhone 16 Pro (No Developer Mode)
-
-### Method 1: Apple TestFlight (Recommended — 0% Developer Mode)
-
-#### If you have access to a Mac:
-1. Open **`SiriLife.xcodeproj`** in Xcode.
-2. Under target **SiriLife** → **Signing & Capabilities**:
-   - Ensure **"Automatically manage signing"** is checked.
-   - Select your **Apple Developer Team** (Bundle ID: `com.luphonix.app`).
-3. In the Xcode top menu destination selector, choose **"Any iOS Device (arm64)"**.
-4. Click **Product → Archive**.
-5. When the Xcode Organizer window appears, select the archive and click **"Distribute App"**.
-6. Select **"TestFlight & App Store"** → click **Upload**.
-7. In ~5 minutes, the build appears in [App Store Connect](https://appstoreconnect.apple.com) under **TestFlight**.
-8. Under **Internal Testing**, add your Apple ID email.
-
-#### On Your iPhone 16 Pro:
-1. Open the **App Store** on your iPhone 16 Pro and download **TestFlight** (by Apple).
-2. Open TestFlight or tap the invitation link received in your email.
-3. Tap **Accept** → Tap **Install**.
-4. Luphonix appears on your Home Screen and opens immediately — **no Developer Mode prompt ever appears!**
 
 ---
 
-### Alternative Method (If testing temporarily via Xcode USB run):
-If you connect your iPhone 16 Pro directly to a Mac with a paid Apple Developer Account registered in Xcode, Xcode installs the app into your device container. *(Note: Free personal Apple IDs via USB prompt for Developer Mode on iOS 16+, which is why TestFlight above is the recommended approach).*
+## 🚀 Part 1: Installing Luphonix on iPhone 16 Pro
+
+### Method 1: Progressive Web App (Recommended — 0% Developer Mode, 0 Cables, 0 Reboots)
+
+This is the fastest, cleanest way to get Luphonix on your iPhone 16 Pro:
+
+1. **Deploy to Vercel** (or launch local server):
+   Once your Vercel URL is live (e.g. `https://luphonix-api.vercel.app`):
+2. **On your iPhone 16 Pro**:
+   - Open **Safari** and visit your deployment URL: `https://your-luphonix.vercel.app`
+   - Tap the **Share** button in Safari's bottom toolbar (the square icon with the upward arrow 📤).
+   - Scroll down and tap **"Add to Home Screen"** (➕).
+   - Tap **Add** in the top right corner.
+3. **Open Luphonix**:
+   - Tap the **Luphonix** icon on your Home Screen.
+   - It launches in **standalone mode** (full screen with no browser bars), with native haptics, water ring animations, task management, and live Turso database cloud sync.
+   - **No Developer Mode prompt, no Mac needed, and no 7-day expiration!**
+
+---
+
+### Method 2: Native IPA Sideloading (Requires Developer Mode + Sideloadly)
+
+### Step 1: Trigger the Cloud Build on GitHub
+1. Commit and push your latest code to your GitHub repository:
+   ```bash
+   git add .
+   git commit -m "Configure GitHub Actions cloud IPA build"
+   git push origin main
+   ```
+2. Go to your GitHub repository in your web browser:
+   `https://github.com/luphonixtestimonials/ios-personal-assistant-`
+3. Click the **Actions** tab at the top.
+4. You will see the **"SiriLife iOS Build & IPA Release"** workflow running on a cloud Mac (`macos-14`).
+   *(Or click "Run workflow" to start it manually anytime).*
+5. In ~3–4 minutes, the workflow turns **green (success)** ✅.
+
+### Step 2: Download `SiriLife.ipa` to your Windows PC
+1. Click on the completed workflow run.
+2. Scroll down to the **Artifacts** section at the bottom.
+3. Click **`SiriLife-iOS-Package`** to download the zip file.
+4. Unzip the file on your Windows PC — inside is your compiled **`SiriLife.ipa`**!
+
+---
+
+### Step 3: Install onto iPhone 16 Pro using Sideloadly (Free for Windows)
+
+**Sideloadly** is the standard, trusted tool that signs iOS apps using your personal free Apple ID and installs them directly to your iPhone from Windows.
+
+1. **Prerequisite**: Ensure you have **Apple Devices** (or **iTunes**) installed on your Windows PC so Apple USB drivers are active:
+   - Download from the [Microsoft Store: Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k) or iTunes.
+2. **Download Sideloadly**:
+   - Download the free Windows installer from [sideloadly.io](https://sideloadly.io) and install it.
+3. **Connect iPhone 16 Pro**:
+   - Connect your iPhone 16 Pro to your Windows PC using your USB-C cable.
+   - If prompted on your iPhone: tap **"Trust This Computer"** and enter your passcode.
+4. **Install Luphonix**:
+   - Open **Sideloadly**. Your iPhone 16 Pro will appear in the **Device** field.
+   - Drag and drop **`SiriLife.ipa`** into the large IPA box on Sideloadly.
+   - Enter your **Apple ID email** in the Apple ID box.
+   - Click **Start**.
+   - *(If prompted, enter your Apple ID password / 2-factor code. Sideloadly sends this directly to Apple's developer provisioning server to generate your free personal certificate).*
+   - Sideloadly will output: `Done! Installing... 100%`.
+
+---
+
+### Step 4: First-Time iPhone Permissions (Takes 30 Seconds)
+
+Because the app is signed with your personal free Apple ID, iOS requires two quick one-time authorizations:
+
+1. **Trust Your Developer Profile**:
+   - On your iPhone 16 Pro, open **Settings** → **General** → **VPN & Device Management**.
+   - Under *Developer App*, tap your **Apple ID email**.
+   - Tap **Trust "[Your Apple ID]"** → tap **Trust**.
+
+2. **Enable Developer Mode (iOS 16+ Requirement)**:
+   - Open **Settings** → **Privacy & Security**.
+   - Scroll down to the bottom and tap **Developer Mode**.
+   - Toggle **Developer Mode** to **ON**.
+   - Tap **Restart**.
+   - After the iPhone restarts and you unlock it, tap **Turn On** and enter your passcode.
+
+🎉 **Luphonix is now fully installed and running natively on your iPhone 16 Pro!** You can now open it, use Siri, and connect it to your live Vercel cloud backend.
+
 
 ---
 
