@@ -274,10 +274,11 @@
           </h3>
           <ol style="font-size: 13px; color: var(--text-muted); padding-left: 18px; line-height: 1.7;">
             <li>Open the built-in <strong>Shortcuts</strong> app on your iPhone 16 Pro.</li>
-            <li>Tap <strong>+</strong> (New Shortcut) → Name it: <em>"Log Water in Luphonix"</em>.</li>
+            <li>Tap <strong>+</strong> (New Shortcut) → Name it: <em>"Check Today's Tasks"</em> or <em>"Log Water in Luphonix"</em>.</li>
             <li>Add action: <strong>"Get Contents of URL"</strong>.</li>
-            <li>Method: <strong>POST</strong> → Paste your Vercel URL copied above.</li>
-            <li>Done! Now say <em>"Hey Siri, log water in Luphonix"</em> anytime!</li>
+            <li>Paste your Webhook URL copied above (<strong>apiKey is already included</strong> — zero auth headers required!).</li>
+            <li>Optional: Add action <strong>"Show Result"</strong> or <strong>"Speak Text"</strong> to have Siri read out your tasks aloud!</li>
+            <li>Done! Say <em>"Hey Siri, what are my tasks in Luphonix?"</em> anytime!</li>
           </ol>
         </div>
       </section>
@@ -304,6 +305,31 @@
           </button>
         </div>
 
+        <!-- Siri Webhook API Key Card -->
+        <div class="glass-card" style="border-color: rgba(6, 182, 212, 0.35); background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="font-family: var(--font-heading); font-size: 16px; font-weight: 700; color: #38BDF8;">
+              🔑 Siri Shortcuts & Webhook API Key
+            </h3>
+            <span class="ring-percentage-pill" style="font-size: 10px; background: rgba(56, 189, 248, 0.2); color: #38BDF8;">Active</span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
+            Webhook URLs on the Siri tab automatically include this key in the link (<code>?apiKey=...</code>). You can also copy it directly for your shortcuts!
+          </p>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label class="form-label" for="setting-webhook-api-key">API Token / Secret Key</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" class="form-input" id="setting-webhook-api-key" readonly style="font-family: monospace; font-size: 11px; letter-spacing: 0.5px;" value="Loading...">
+              <button class="btn-secondary" id="btn-copy-token" style="width: auto; padding: 0 16px; white-space: nowrap; font-weight: 600;">
+                📋 Copy
+              </button>
+            </div>
+          </div>
+          <button class="btn-secondary" id="btn-regenerate-token" style="padding: 8px 12px; font-size: 12px; opacity: 0.85;">
+            🔄 Refresh / Re-fetch Key
+          </button>
+        </div>
+
         <!-- Backend Configuration -->
         <div class="glass-card">
           <h3 style="font-family: var(--font-heading); font-size: 16px; font-weight: 700; margin-bottom: 12px;">
@@ -318,6 +344,7 @@
           </button>
           <div id="backend-ping-result" style="font-size: 12px; margin-top: 8px; font-weight: 600;"></div>
         </div>
+
 
         <!-- Preferences -->
         <div class="glass-card">

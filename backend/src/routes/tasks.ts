@@ -72,7 +72,25 @@ tasksApp.get('/', async (c) => {
     is_completed: Boolean(row.is_completed),
   }));
 
-  return c.json({ success: true, count: tasks.length, data: tasks });
+  let summary = '';
+  if (tasks.length === 0) {
+    summary = filter === 'today'
+      ? 'You have no remaining tasks for today in Luphonix!'
+      : 'You have no tasks in Luphonix.';
+  } else {
+    const titles = tasks.slice(0, 3).map((t: any) => t.title).join(', ');
+    const more = tasks.length > 3 ? ` and ${tasks.length - 3} more` : '';
+    summary = `You have ${tasks.length} task${tasks.length === 1 ? '' : 's'}: ${titles}${more}.`;
+  }
+
+  return c.json({
+    success: true,
+    count: tasks.length,
+    data: tasks,
+    summary,
+    message: summary,
+    speech: summary,
+  });
 });
 
 // POST /api/tasks (Create or Upsert)

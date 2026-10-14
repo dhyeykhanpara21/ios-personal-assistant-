@@ -96,24 +96,42 @@ hydrationApp.get('/history', async (c) => {
   });
 });
 
-// POST /api/hydration (Log water intake)
-hydrationApp.post('/', async (c) => {
+// Helper for logging water
+async function handleWaterLog(c: any) {
   const userId = c.get('userId');
-  const body = await c.req.json();
-  const parsed = logSchema.safeParse(body);
 
-  if (!parsed.success) {
-    return c.json({ success: false, error: 'Validation failed', details: parsed.error.errors }, 400);
+  let amount_ml = 250;
+  let customId: string | undefined;
+  let logged_at = new Date().toISOString();
+
+  // Try parsing JSON body if present
+  try {
+    const body = await c.req.json();
+    if (body) {
+      if (typeof body.amount_ml === 'number') amount_ml = body.amount_ml;
+      else if (typeof body.amount === 'number') amount_ml = body.amount;
+      if (body.id) customId = body.id;
+      if (body.logged_at) logged_at = body.logged_at;
+    }
+  } catch {
+    // No body or invalid json; fallback to query params
   }
 
-  const { id = randomUUID(), amount_ml, logged_at = new Date().toISOString() } = parsed.data;
+  // Check query params if body didn't specify amount
+  const qAmt = c.req.query('amount') || c.req.query('amount_ml');
+  if (qAmt) {
+    const parsed = parseInt(qAmt, 10);
+    if (!isNaN(parsed) && parsed > 0) amount_ml = parsed;
+  }
+
+  const id = customId || randomUUID();
 
   await db.execute({
     sql: 'INSERT INTO hydration_logs (id, user_id, amount_ml, logged_at) VALUES (?, ?, ?, ?)',
     args: [id, userId, amount_ml, logged_at],
   });
 
-  // Recalculate today's summary to return
+  // Recalculate today's summary
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date();
@@ -132,11 +150,15 @@ hydrationApp.post('/', async (c) => {
 
   const totalDrunk = Number(sumRes.rows[0]?.total || 0);
   const dailyGoal = Number(prefRes.rows[0]?.daily_water_goal_ml || 2000);
+  const remaining = Math.max(0, dailyGoal - totalDrunk);
+  const msg = `Logged ${amount_ml} ml in Luphonix. Total today: ${totalDrunk} ml of ${dailyGoal} ml goal.`;
 
   return c.json(
     {
       success: true,
-      message: `Logged ${amount_ml} ml of water`,
+      message: msg,
+      speech: msg,
+      summary: msg,
       data: {
         id,
         user_id: userId,
@@ -144,12 +166,21 @@ hydrationApp.post('/', async (c) => {
         logged_at,
         today_total_ml: totalDrunk,
         daily_goal_ml: dailyGoal,
-        remaining_ml: Math.max(0, dailyGoal - totalDrunk),
+        remaining_ml: remaining,
       },
     },
     201
   );
-});
+}
+
+// POST /api/hydration (Log water intake)
+hydrationApp.post('/', handleWaterLog);
+hydrationApp.post('/log', handleWaterLog);
+
+// GET & POST /api/hydration and /api/hydration/log (Allows simple URL triggers from Siri without setting POST body)
+hydrationApp.get('/', handleWaterLog);
+hydrationApp.get('/log', handleWaterLog);
+
 
 // DELETE /api/hydration/:id
 hydrationApp.delete('/:id', async (c) => {

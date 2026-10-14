@@ -5,10 +5,43 @@ import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
 import { db } from '../db/client.js';
 import { config } from '../config.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, getOrCreateDefaultUser } from '../middleware/auth.js';
 import { AppEnv } from '../types/index.js';
 
 const authApp = new Hono<AppEnv>();
+
+// GET & POST /api/auth/webhook-key (generates or retrieves a long-lived Webhook API Key for Siri & Shortcuts)
+authApp.get('/webhook-key', async (c) => {
+  const user = await getOrCreateDefaultUser();
+  const token = jwt.sign(
+    { userId: user.id, email: user.email, isWebhook: true },
+    config.JWT_SECRET,
+    { expiresIn: '3650d' }
+  );
+
+  return c.json({
+    success: true,
+    apiKey: token,
+    userId: user.id,
+    email: user.email,
+  });
+});
+
+authApp.post('/webhook-key', async (c) => {
+  const user = await getOrCreateDefaultUser();
+  const token = jwt.sign(
+    { userId: user.id, email: user.email, isWebhook: true },
+    config.JWT_SECRET,
+    { expiresIn: '3650d' }
+  );
+
+  return c.json({
+    success: true,
+    apiKey: token,
+    userId: user.id,
+    email: user.email,
+  });
+});
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),

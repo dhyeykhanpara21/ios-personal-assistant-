@@ -242,5 +242,45 @@ describe('Luphonix Backend API Test Suite', async () => {
     assert.ok(body.data.tasks.length >= 1);
     assert.ok(body.data.reminders.length >= 1);
   });
+
+  it('14. GET /api/auth/webhook-key should return valid long-lived API key', async () => {
+    const res = await app.request('/api/auth/webhook-key');
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.ok(body.apiKey);
+  });
+
+  it('15. GET /api/tasks with apiKey query param should authenticate without headers', async () => {
+    const keyRes = await app.request('/api/auth/webhook-key');
+    const { apiKey } = await keyRes.json();
+
+    const res = await app.request(`/api/tasks?filter=today&apiKey=${encodeURIComponent(apiKey)}`);
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.ok(body.summary);
+    assert.ok(body.speech);
+  });
+
+  it('16. GET /api/hydration with apiKey and amount query param should log water intake', async () => {
+    const keyRes = await app.request('/api/auth/webhook-key');
+    const { apiKey } = await keyRes.json();
+
+    const res = await app.request(`/api/hydration?amount=250&apiKey=${encodeURIComponent(apiKey)}`);
+    assert.strictEqual(res.status, 201);
+    const body = await res.json();
+    assert.strictEqual(body.success, true);
+    assert.ok(body.speech.includes('250 ml'));
+  });
+
+  it('17. Requests without token or apiKey should return 401 with helpful instructions', async () => {
+    const res = await app.request('/api/tasks?filter=today');
+    assert.strictEqual(res.status, 401);
+    const body = await res.json();
+    assert.strictEqual(body.success, false);
+    assert.ok(body.error.includes('apiKey'));
+  });
 });
+
 

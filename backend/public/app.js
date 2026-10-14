@@ -11,6 +11,7 @@
   const STORAGE_KEY_WATER = 'luphonix_water_logs_v1';
   const STORAGE_KEY_REMINDERS = 'luphonix_reminders_v1';
   const STORAGE_KEY_PREFS = 'luphonix_preferences_v1';
+  const STORAGE_KEY_API_KEY = 'luphonix_api_key_v1';
 
   // Default sample data for instant wow effect on first open
   const DEFAULT_TASKS = [
@@ -499,13 +500,56 @@
     }
   }
 
+  let currentApiKey = localStorage.getItem(STORAGE_KEY_API_KEY) || '';
+
+  function updateApiKeyUI(key) {
+    const input = document.getElementById('setting-webhook-api-key');
+    if (input) {
+      input.value = key;
+    }
+  }
+
+  async function ensureApiKey(forceRefresh = false) {
+    if (!forceRefresh && currentApiKey) {
+      updateApiKeyUI(currentApiKey);
+      return currentApiKey;
+    }
+
+    const base = state.prefs.backendUrl || window.location.origin;
+    try {
+      const res = await fetch(`${base}/api/auth/webhook-key`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.apiKey) {
+          currentApiKey = data.apiKey;
+          localStorage.setItem(STORAGE_KEY_API_KEY, currentApiKey);
+          updateApiKeyUI(currentApiKey);
+          return currentApiKey;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch webhook key from cloud:', e);
+    }
+
+    if (!currentApiKey) {
+      currentApiKey = 'luphonix-siri-master-key';
+      localStorage.setItem(STORAGE_KEY_API_KEY, currentApiKey);
+    }
+    updateApiKeyUI(currentApiKey);
+    return currentApiKey;
+  }
+
   async function syncWaterToCloud(log) {
     if (!state.prefs.backendUrl) return;
     try {
-      await fetch(`${state.prefs.backendUrl}/api/hydration/log`, {
+      const key = await ensureApiKey();
+      await fetch(`${state.prefs.backendUrl}/api/hydration`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount_ml: log.amount_ml, timestamp: log.timestamp })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({ amount_ml: log.amount_ml, logged_at: log.timestamp })
       });
     } catch (e) {
       // Offline fallback silent catch
@@ -515,9 +559,13 @@
   async function syncTaskToCloud(task) {
     if (!state.prefs.backendUrl) return;
     try {
+      const key = await ensureApiKey();
       await fetch(`${state.prefs.backendUrl}/api/tasks`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
         body: JSON.stringify(task)
       });
     } catch (e) {
@@ -529,27 +577,49 @@
   function setupSiriCopyButtons() {
     const waterBtn = document.getElementById('btn-copy-siri-water');
     const tasksBtn = document.getElementById('btn-copy-siri-tasks');
+    const copyTokenBtn = document.getElementById('btn-copy-token');
+    const refreshBtn = document.getElementById('btn-regenerate-token');
 
     const base = state.prefs.backendUrl || window.location.origin;
 
     if (waterBtn) {
-      waterBtn.addEventListener('click', () => {
-        const url = `${base}/api/hydration/log`;
+      waterBtn.addEventListener('click', async () => {
+        const key = await ensureApiKey();
+        const url = `${base}/api/hydration?amount=250&apiKey=${encodeURIComponent(key)}`;
         navigator.clipboard.writeText(url).then(() => {
-          showToast('Copied Water Webhook URL!', 'success');
+          showToast('Copied Water Webhook URL (with API key)!', 'success');
         });
       });
     }
 
     if (tasksBtn) {
-      tasksBtn.addEventListener('click', () => {
-        const url = `${base}/api/tasks?filter=today`;
+      tasksBtn.addEventListener('click', async () => {
+        const key = await ensureApiKey();
+        const url = `${base}/api/tasks?filter=today&apiKey=${encodeURIComponent(key)}`;
         navigator.clipboard.writeText(url).then(() => {
-          showToast('Copied Tasks API URL!', 'success');
+          showToast('Copied Tasks Webhook URL (with API key)!', 'success');
         });
       });
     }
+
+    if (copyTokenBtn) {
+      copyTokenBtn.addEventListener('click', async () => {
+        const key = await ensureApiKey();
+        navigator.clipboard.writeText(key).then(() => {
+          showToast('Copied API Key to clipboard!', 'success');
+        });
+      });
+    }
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', async () => {
+        showToast('Refreshing API key...', 'info');
+        await ensureApiKey(true);
+        showToast('API Key refreshed successfully!', 'success');
+      });
+    }
   }
+
 
   // --- Modal Controllers ---
   function openModal(id) {
@@ -858,11 +928,13 @@
     renderTasks();
     renderReminders();
     initEvents();
+    ensureApiKey();
     registerServiceWorker();
 
     // Health ping test on load
     setTimeout(testBackendPing, 800);
   }
+
 
   // Run on DOM ready
   if (document.readyState === 'loading') {
