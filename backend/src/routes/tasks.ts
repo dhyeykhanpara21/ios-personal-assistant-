@@ -96,7 +96,16 @@ tasksApp.get('/', async (c) => {
     summary = `You have ${tasks.length} task${tasks.length === 1 ? '' : 's'}: ${titles}${more}.`;
   }
 
-  if (c.req.query('format') === 'text' || c.req.query('text') === '1' || c.req.header('accept')?.includes('text/plain')) {
+  const format = c.req.query('format')?.toLowerCase();
+  const accept = c.req.header('accept')?.toLowerCase() || '';
+  const userAgent = c.req.header('user-agent')?.toLowerCase() || '';
+  const hasQueryAuth = Boolean(c.req.query('apiKey') || c.req.query('token') || c.req.query('key'));
+
+  const isExplicitJson = format === 'json' || accept.includes('application/json');
+  const isExplicitText = format === 'text' || c.req.query('text') === '1' || accept.includes('text/plain');
+  const isShortcut = userAgent.includes('shortcut') || userAgent.includes('cfnetwork') || userAgent.includes('darwin');
+
+  if (isExplicitText || (!isExplicitJson && (isShortcut || hasQueryAuth))) {
     return c.text(summary);
   }
 
@@ -108,6 +117,36 @@ tasksApp.get('/', async (c) => {
     message: summary,
     speech: summary,
   });
+});
+
+// GET /api/tasks/add (Hands-free task creation for Siri Shortcuts)
+tasksApp.get('/add', async (c) => {
+  const userId = c.get('userId');
+  const title = c.req.query('title') || c.req.query('text') || c.req.query('q');
+
+  if (!title || !title.trim()) {
+    return c.text('Please provide a task title to add.');
+  }
+
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  const taskTitle = title.trim();
+
+  await db.execute({
+    sql: `INSERT INTO tasks (
+      id, user_id, title, description, due_at, priority, category,
+      is_completed, recurrence_rule, created_at, updated_at
+    ) VALUES (?, ?, ?, NULL, ?, 'medium', 'work', 0, NULL, ?, ?)`,
+    args: [id, userId, taskTitle, now, now, now],
+  });
+
+  const msg = `Added "${taskTitle}" to your Luphonix tasks.`;
+  const format = c.req.query('format')?.toLowerCase();
+  const accept = c.req.header('accept')?.toLowerCase() || '';
+  if (format === 'json' || accept.includes('application/json')) {
+    return c.json({ success: true, message: msg, data: { id, title: taskTitle } }, 201);
+  }
+  return c.text(msg);
 });
 
 // POST /api/tasks (Create or Upsert)

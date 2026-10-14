@@ -1,4 +1,4 @@
-const CACHE_NAME = 'luphonix-pwa-v1';
+const CACHE_NAME = 'luphonix-pwa-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -31,7 +31,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Network-first for API, Cache-first for static assets
+// Fetch: Network-first for API and code assets, Cache-first for media
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -47,11 +47,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-first for HTML and JS logic so cloud sync updates apply immediately
+  if (url.pathname === '/app.js' || url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   // Static assets: Cache-first with network fallback
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Fetch in background to update cache (stale-while-revalidate)
         fetch(event.request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));

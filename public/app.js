@@ -383,11 +383,39 @@
     syncTaskToCloud(task);
   }
 
+  async function deleteTaskFromCloud(id) {
+    const base = state.prefs.backendUrl || window.location.origin;
+    try {
+      let key = await ensureApiKey();
+      let res = await fetch(`${base}/api/tasks/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Accept': 'application/json'
+        }
+      });
+      if (res.status === 401) {
+        key = await ensureApiKey(true);
+        await fetch(`${base}/api/tasks/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${key}`,
+            'Accept': 'application/json'
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Offline delete fallback:', e);
+    }
+  }
+
   function deleteTask(id) {
     state.tasks = state.tasks.filter((t) => t.id !== id);
     saveStorage(STORAGE_KEY_TASKS, state.tasks);
     renderTasks();
     showToast('Task removed', 'info');
+
+    deleteTaskFromCloud(id);
   }
 
   function addTask(title, category, priority) {
@@ -511,12 +539,12 @@
   }
 
   async function ensureApiKey(forceRefresh = false) {
-    if (!forceRefresh && currentApiKey) {
+    const base = state.prefs.backendUrl || window.location.origin;
+    if (!forceRefresh && currentApiKey && currentApiKey !== 'luphonix-siri-master-key') {
       updateApiKeyUI(currentApiKey);
       return currentApiKey;
     }
 
-    const base = state.prefs.backendUrl || window.location.origin;
     try {
       const res = await fetch(`${base}/api/auth/webhook-key`, { cache: 'no-store' });
       if (res.ok) {
@@ -541,17 +569,30 @@
   }
 
   async function syncWaterToCloud(log) {
-    if (!state.prefs.backendUrl) return;
+    const base = state.prefs.backendUrl || window.location.origin;
     try {
-      const key = await ensureApiKey();
-      await fetch(`${state.prefs.backendUrl}/api/hydration`, {
+      let key = await ensureApiKey();
+      let res = await fetch(`${base}/api/hydration`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': `Bearer ${key}`
         },
         body: JSON.stringify({ amount_ml: log.amount_ml, logged_at: log.timestamp })
       });
+      if (res.status === 401) {
+        key = await ensureApiKey(true);
+        await fetch(`${base}/api/hydration`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify({ amount_ml: log.amount_ml, logged_at: log.timestamp })
+        });
+      }
     } catch (e) {
       // Offline fallback silent catch
     }
@@ -560,7 +601,7 @@
   async function syncTaskToCloud(task) {
     const base = state.prefs.backendUrl || window.location.origin;
     try {
-      const key = await ensureApiKey();
+      let key = await ensureApiKey();
       const payload = {
         id: task.id,
         title: task.title,
@@ -569,14 +610,27 @@
         is_completed: Boolean(task.is_completed),
         due_at: task.due_at || new Date().toISOString()
       };
-      const res = await fetch(`${base}/api/tasks`, {
+      let res = await fetch(`${base}/api/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': `Bearer ${key}`
         },
         body: JSON.stringify(payload)
       });
+      if (res.status === 401) {
+        key = await ensureApiKey(true);
+        res = await fetch(`${base}/api/tasks`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify(payload)
+        });
+      }
       if (!res.ok) {
         console.warn('Task sync non-200:', res.status, await res.text());
       }
@@ -585,11 +639,12 @@
     }
   }
 
-  async function syncAllWithCloud() {
+  async function syncAllWithCloud(showToastFeedback = false) {
     const base = state.prefs.backendUrl || window.location.origin;
     try {
-      const key = await ensureApiKey();
-      // Push local tasks up
+      let key = await ensureApiKey();
+
+      // Push local tasks up first
       if (Array.isArray(state.tasks) && state.tasks.length > 0) {
         for (const t of state.tasks) {
           await syncTaskToCloud(t);
@@ -597,15 +652,39 @@
       }
 
       // Pull cloud tasks down
-      const res = await fetch(`${base}/api/tasks?filter=all`, {
-        headers: { 'Authorization': `Bearer ${key}` }
+      let res = await fetch(`${base}/api/tasks?filter=all`, {
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Accept': 'application/json'
+        }
       });
+      if (res.status === 401) {
+        key = await ensureApiKey(true);
+        res = await fetch(`${base}/api/tasks?filter=all`, {
+          headers: {
+            'Authorization': `Bearer ${key}`,
+            'Accept': 'application/json'
+          }
+        });
+      }
       if (res.ok) {
         const body = await res.json();
-        if (body && Array.isArray(body.data) && body.data.length > 0) {
-          state.tasks = body.data;
+        if (body && Array.isArray(body.data)) {
+          // Merge local and cloud preserving local tasks
+          const taskMap = new Map();
+          (state.tasks || []).forEach(t => taskMap.set(t.id, t));
+          body.data.forEach(t => {
+            taskMap.set(t.id, {
+              ...t,
+              is_completed: Boolean(t.is_completed)
+            });
+          });
+          state.tasks = Array.from(taskMap.values());
           saveStorage(STORAGE_KEY_TASKS, state.tasks);
           renderTasks();
+          if (showToastFeedback) {
+            showToast(`Synced ${state.tasks.length} tasks with Siri Cloud! ☁️`, 'success');
+          }
         }
       }
     } catch (e) {
@@ -944,6 +1023,15 @@
     const goalInput = document.getElementById('setting-daily-water-goal');
     if (goalInput && state.prefs.dailyWaterGoal) {
       goalInput.value = state.prefs.dailyWaterGoal;
+    }
+
+    // Sync Tasks with Cloud Button
+    const btnSyncTasks = document.getElementById('btn-sync-tasks-cloud');
+    if (btnSyncTasks) {
+      btnSyncTasks.addEventListener('click', () => {
+        showToast('Syncing with Siri Cloud...', 'info');
+        syncAllWithCloud(true);
+      });
     }
 
     setupSiriCopyButtons();

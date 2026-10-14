@@ -153,7 +153,16 @@ async function handleWaterLog(c: any) {
   const remaining = Math.max(0, dailyGoal - totalDrunk);
   const msg = `Logged ${amount_ml} ml in Luphonix. Total today: ${totalDrunk} ml of ${dailyGoal} ml goal.`;
 
-  if (c.req.query('format') === 'text' || c.req.query('text') === '1' || c.req.header('accept')?.includes('text/plain')) {
+  const format = c.req.query('format')?.toLowerCase();
+  const accept = c.req.header('accept')?.toLowerCase() || '';
+  const userAgent = c.req.header('user-agent')?.toLowerCase() || '';
+  const hasQueryAuth = Boolean(c.req.query('apiKey') || c.req.query('token') || c.req.query('key'));
+
+  const isExplicitJson = format === 'json' || accept.includes('application/json');
+  const isExplicitText = format === 'text' || c.req.query('text') === '1' || accept.includes('text/plain');
+  const isShortcut = userAgent.includes('shortcut') || userAgent.includes('cfnetwork') || userAgent.includes('darwin');
+
+  if (isExplicitText || (!isExplicitJson && (isShortcut || hasQueryAuth))) {
     return c.text(msg);
   }
 

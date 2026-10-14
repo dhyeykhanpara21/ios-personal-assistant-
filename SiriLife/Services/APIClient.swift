@@ -41,7 +41,7 @@ public final class APIClient {
             UserDefaults.standard.set(newValue, forKey: "luphonix_backend_url")
         }
     }
-    private var _defaultBaseURL: String = "http://localhost:3000"
+    private var _defaultBaseURL: String = "https://luphonix-web.vercel.app"
     
     private let session: URLSession
     private let encoder: JSONEncoder
