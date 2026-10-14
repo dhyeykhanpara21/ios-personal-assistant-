@@ -24,32 +24,71 @@ On iOS 16 and later, Apple introduced "Developer Mode" **strictly for direct USB
 
 ---
 
-## 🚀 Part 1: Installing Luphonix on iPhone 16 Pro (No Developer Mode)
+## 🚀 Part 1: Building & Installing Luphonix from Windows (No Mac Required)
 
-### Method 1: Apple TestFlight (Recommended — 0% Developer Mode)
+Since you are developing on **Windows** and using a **Free Apple ID**, you do **not need a MacBook**. GitHub Actions builds the iOS app on cloud Apple Silicon servers for you.
 
-#### If you have access to a Mac:
-1. Open **`SiriLife.xcodeproj`** in Xcode.
-2. Under target **SiriLife** → **Signing & Capabilities**:
-   - Ensure **"Automatically manage signing"** is checked.
-   - Select your **Apple Developer Team** (Bundle ID: `com.luphonix.app`).
-3. In the Xcode top menu destination selector, choose **"Any iOS Device (arm64)"**.
-4. Click **Product → Archive**.
-5. When the Xcode Organizer window appears, select the archive and click **"Distribute App"**.
-6. Select **"TestFlight & App Store"** → click **Upload**.
-7. In ~5 minutes, the build appears in [App Store Connect](https://appstoreconnect.apple.com) under **TestFlight**.
-8. Under **Internal Testing**, add your Apple ID email.
+### Step 1: Trigger the Cloud Build on GitHub
+1. Commit and push your latest code to your GitHub repository:
+   ```bash
+   git add .
+   git commit -m "Configure GitHub Actions cloud IPA build"
+   git push origin main
+   ```
+2. Go to your GitHub repository in your web browser:
+   `https://github.com/dhyeykhanpara21/ios-personal-assistant-`
+3. Click the **Actions** tab at the top.
+4. You will see the **"SiriLife iOS Build & IPA Release"** workflow running on a cloud Mac (`macos-14`).
+   *(Or click "Run workflow" to start it manually anytime).*
+5. In ~3–4 minutes, the workflow turns **green (success)** ✅.
 
-#### On Your iPhone 16 Pro:
-1. Open the **App Store** on your iPhone 16 Pro and download **TestFlight** (by Apple).
-2. Open TestFlight or tap the invitation link received in your email.
-3. Tap **Accept** → Tap **Install**.
-4. Luphonix appears on your Home Screen and opens immediately — **no Developer Mode prompt ever appears!**
+### Step 2: Download `SiriLife.ipa` to your Windows PC
+1. Click on the completed workflow run.
+2. Scroll down to the **Artifacts** section at the bottom.
+3. Click **`SiriLife-iOS-Package`** to download the zip file.
+4. Unzip the file on your Windows PC — inside is your compiled **`SiriLife.ipa`**!
 
 ---
 
-### Alternative Method (If testing temporarily via Xcode USB run):
-If you connect your iPhone 16 Pro directly to a Mac with a paid Apple Developer Account registered in Xcode, Xcode installs the app into your device container. *(Note: Free personal Apple IDs via USB prompt for Developer Mode on iOS 16+, which is why TestFlight above is the recommended approach).*
+### Step 3: Install onto iPhone 16 Pro using Sideloadly (Free for Windows)
+
+**Sideloadly** is the standard, trusted tool that signs iOS apps using your personal free Apple ID and installs them directly to your iPhone from Windows.
+
+1. **Prerequisite**: Ensure you have **Apple Devices** (or **iTunes**) installed on your Windows PC so Apple USB drivers are active:
+   - Download from the [Microsoft Store: Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k) or iTunes.
+2. **Download Sideloadly**:
+   - Download the free Windows installer from [sideloadly.io](https://sideloadly.io) and install it.
+3. **Connect iPhone 16 Pro**:
+   - Connect your iPhone 16 Pro to your Windows PC using your USB-C cable.
+   - If prompted on your iPhone: tap **"Trust This Computer"** and enter your passcode.
+4. **Install Luphonix**:
+   - Open **Sideloadly**. Your iPhone 16 Pro will appear in the **Device** field.
+   - Drag and drop **`SiriLife.ipa`** into the large IPA box on Sideloadly.
+   - Enter your **Apple ID email** in the Apple ID box.
+   - Click **Start**.
+   - *(If prompted, enter your Apple ID password / 2-factor code. Sideloadly sends this directly to Apple's developer provisioning server to generate your free personal certificate).*
+   - Sideloadly will output: `Done! Installing... 100%`.
+
+---
+
+### Step 4: First-Time iPhone Permissions (Takes 30 Seconds)
+
+Because the app is signed with your personal free Apple ID, iOS requires two quick one-time authorizations:
+
+1. **Trust Your Developer Profile**:
+   - On your iPhone 16 Pro, open **Settings** → **General** → **VPN & Device Management**.
+   - Under *Developer App*, tap your **Apple ID email**.
+   - Tap **Trust "[Your Apple ID]"** → tap **Trust**.
+
+2. **Enable Developer Mode (iOS 16+ Requirement)**:
+   - Open **Settings** → **Privacy & Security**.
+   - Scroll down to the bottom and tap **Developer Mode**.
+   - Toggle **Developer Mode** to **ON**.
+   - Tap **Restart**.
+   - After the iPhone restarts and you unlock it, tap **Turn On** and enter your passcode.
+
+🎉 **Luphonix is now fully installed and running natively on your iPhone 16 Pro!** You can now open it, use Siri, and connect it to your live Vercel cloud backend.
+
 
 ---
 
