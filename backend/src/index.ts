@@ -70,6 +70,9 @@ app.get('/index.html', (c) => c.html(getPwaHtml()));
 app.get('/login', (c) => c.html(getPwaHtml()));
 app.get('/signup', (c) => c.html(getPwaHtml()));
 app.get('/auth', (c) => c.html(getPwaHtml()));
+app.get('/setup', (c) => c.html(getPwaHtml()));
+app.get('/devices', (c) => c.html(getPwaHtml()));
+app.get('/siri', (c) => c.html(getPwaHtml()));
 
 // Serve PWA Static Frontend
 app.use('/*', serveStatic({ root: './public' }));

@@ -1729,6 +1729,8 @@
       }, 50);
     } else if (path.includes('device') || hash.includes('device')) {
       setTimeout(() => switchView('devices'), 50);
+    } else if (path.includes('setup') || hash.includes('setup') || path.includes('siri') || hash.includes('siri')) {
+      setTimeout(() => switchView('siri'), 50);
     }
   }
 
