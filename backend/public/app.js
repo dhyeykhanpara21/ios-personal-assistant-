@@ -768,6 +768,15 @@
     const accountEmail = document.getElementById('account-email-val');
     const accountId = document.getElementById('account-id-val');
     const accountAvatarChar = document.getElementById('account-avatar-char');
+    const settingsPill = document.getElementById('settings-auth-status-pill');
+
+    // Page-level elements
+    const pageLoggedIn = document.getElementById('auth-page-logged-in');
+    const pageForms = document.getElementById('auth-page-forms');
+    const pageAvatar = document.getElementById('auth-page-avatar');
+    const pageName = document.getElementById('auth-page-name');
+    const pageEmail = document.getElementById('auth-page-email');
+    const pageUid = document.getElementById('auth-page-uid');
 
     if (state.user && state.token) {
       const initial = (state.user.name || state.user.email || 'U').charAt(0).toUpperCase();
@@ -777,6 +786,18 @@
       if (accountEmail) accountEmail.textContent = state.user.email || '';
       if (accountId) accountId.textContent = state.user.id || '';
       if (accountAvatarChar) accountAvatarChar.textContent = initial;
+      if (settingsPill) {
+        settingsPill.textContent = 'Active: ' + (state.user.name ? state.user.name.split(' ')[0] : 'User');
+        settingsPill.style.background = 'rgba(16, 185, 129, 0.2)';
+        settingsPill.style.color = '#34D399';
+      }
+
+      if (pageLoggedIn) pageLoggedIn.style.display = 'block';
+      if (pageForms) pageForms.style.display = 'none';
+      if (pageAvatar) pageAvatar.textContent = initial;
+      if (pageName) pageName.textContent = state.user.name || 'User';
+      if (pageEmail) pageEmail.textContent = state.user.email || '';
+      if (pageUid) pageUid.textContent = state.user.id || '';
     } else {
       if (nameSpan) nameSpan.textContent = 'Sign In';
       if (avatarIcon) avatarIcon.textContent = '👤';
@@ -784,13 +805,26 @@
       if (accountEmail) accountEmail.textContent = 'user@luphonix.local';
       if (accountId) accountId.textContent = 'user_siri_default';
       if (accountAvatarChar) accountAvatarChar.textContent = 'G';
+      if (settingsPill) {
+        settingsPill.textContent = 'Guest Mode';
+        settingsPill.style.background = 'rgba(6, 182, 212, 0.2)';
+        settingsPill.style.color = '#38BDF8';
+      }
+
+      if (pageLoggedIn) pageLoggedIn.style.display = 'none';
+      if (pageForms) pageForms.style.display = 'block';
     }
   }
 
-  async function loginUser(email, password) {
+  async function loginUser(email, password, source = 'modal') {
     const base = getBackendBaseUrl();
-    const errorDiv = document.getElementById('auth-error-msg');
-    const submitBtn = document.getElementById('btn-submit-login');
+    const errorDiv = source === 'page'
+      ? document.getElementById('auth-page-error-msg')
+      : document.getElementById('auth-error-msg');
+    const submitBtn = source === 'page'
+      ? document.getElementById('btn-submit-page-login')
+      : document.getElementById('btn-submit-login');
+
     if (errorDiv) errorDiv.style.display = 'none';
     if (submitBtn) {
       submitBtn.disabled = true;
@@ -828,15 +862,20 @@
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Sign In to Luphonix';
+        submitBtn.textContent = 'Sign In';
       }
     }
   }
 
-  async function registerUser(name, email, password) {
+  async function registerUser(name, email, password, source = 'modal') {
     const base = getBackendBaseUrl();
-    const errorDiv = document.getElementById('auth-error-msg');
-    const submitBtn = document.getElementById('btn-submit-signup');
+    const errorDiv = source === 'page'
+      ? document.getElementById('auth-page-error-msg')
+      : document.getElementById('auth-error-msg');
+    const submitBtn = source === 'page'
+      ? document.getElementById('btn-submit-page-signup')
+      : document.getElementById('btn-submit-signup');
+
     if (errorDiv) errorDiv.style.display = 'none';
     if (submitBtn) {
       submitBtn.disabled = true;
@@ -874,7 +913,7 @@
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Create My Account';
+        submitBtn.textContent = 'Create Account';
       }
     }
   }
@@ -1530,6 +1569,71 @@
       btnLogout.addEventListener('click', logoutUser);
     }
 
+    // Dedicated Auth Page Bindings
+    const btnOpenAuthPage = document.getElementById('btn-open-auth-page');
+    if (btnOpenAuthPage) {
+      btnOpenAuthPage.addEventListener('click', () => switchView('auth'));
+    }
+
+    const btnAuthBack = document.getElementById('btn-auth-back');
+    if (btnAuthBack) {
+      btnAuthBack.addEventListener('click', () => switchView('settings'));
+    }
+
+    const pageTabLogin = document.getElementById('auth-page-tab-login');
+    const pageTabSignup = document.getElementById('auth-page-tab-signup');
+    const pageCardLogin = document.getElementById('auth-page-card-login');
+    const pageCardSignup = document.getElementById('auth-page-card-signup');
+    const pageAuthError = document.getElementById('auth-page-error-msg');
+
+    if (pageTabLogin && pageTabSignup) {
+      pageTabLogin.addEventListener('click', () => {
+        pageTabLogin.classList.add('active');
+        pageTabSignup.classList.remove('active');
+        if (pageCardLogin) pageCardLogin.style.display = 'block';
+        if (pageCardSignup) pageCardSignup.style.display = 'none';
+        if (pageAuthError) pageAuthError.style.display = 'none';
+      });
+
+      pageTabSignup.addEventListener('click', () => {
+        pageTabSignup.classList.add('active');
+        pageTabLogin.classList.remove('active');
+        if (pageCardSignup) pageCardSignup.style.display = 'block';
+        if (pageCardLogin) pageCardLogin.style.display = 'none';
+        if (pageAuthError) pageAuthError.style.display = 'none';
+      });
+    }
+
+    const formPageLogin = document.getElementById('form-auth-page-login');
+    if (formPageLogin) {
+      formPageLogin.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('page-login-email')?.value.trim();
+        const password = document.getElementById('page-login-password')?.value;
+        if (email && password) {
+          loginUser(email, password, 'page');
+        }
+      });
+    }
+
+    const formPageSignup = document.getElementById('form-auth-page-signup');
+    if (formPageSignup) {
+      formPageSignup.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('page-signup-name')?.value.trim();
+        const email = document.getElementById('page-signup-email')?.value.trim();
+        const password = document.getElementById('page-signup-password')?.value;
+        if (name && email && password) {
+          registerUser(name, email, password, 'page');
+        }
+      });
+    }
+
+    const btnPageLogout = document.getElementById('btn-auth-page-logout');
+    if (btnPageLogout) {
+      btnPageLogout.addEventListener('click', logoutUser);
+    }
+
     // --- Connected Devices & Request Monitor Event Handlers ---
     const btnRefreshDevices = document.getElementById('btn-refresh-devices');
     if (btnRefreshDevices) {
@@ -1611,6 +1715,21 @@
 
     // Health ping test on load
     setTimeout(testBackendPing, 800);
+
+    // Check initial route / hash for direct navigation (/login, /signup, /auth, /devices)
+    const path = (window.location.pathname || '').toLowerCase();
+    const hash = (window.location.hash || '').toLowerCase();
+    if (path.includes('login') || path.includes('signup') || path.includes('auth') || hash.includes('login') || hash.includes('signup') || hash.includes('auth')) {
+      setTimeout(() => {
+        switchView('auth');
+        if (path.includes('signup') || hash.includes('signup')) {
+          const signupTab = document.getElementById('auth-page-tab-signup');
+          if (signupTab) signupTab.click();
+        }
+      }, 50);
+    } else if (path.includes('device') || hash.includes('device')) {
+      setTimeout(() => switchView('devices'), 50);
+    }
   }
 
 

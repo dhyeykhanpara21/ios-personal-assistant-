@@ -67,6 +67,9 @@ import { getPwaHtml } from './pwaHtml.js';
 // Root fallback to PWA HTML directly
 app.get('/', (c) => c.html(getPwaHtml()));
 app.get('/index.html', (c) => c.html(getPwaHtml()));
+app.get('/login', (c) => c.html(getPwaHtml()));
+app.get('/signup', (c) => c.html(getPwaHtml()));
+app.get('/auth', (c) => c.html(getPwaHtml()));
 
 // Serve PWA Static Frontend
 app.use('/*', serveStatic({ root: './public' }));
