@@ -31,6 +31,11 @@
           <span class="status-dot"></span>
           <span id="connection-text">Cloud Sync</span>
         </div>
+        <!-- User Account Profile Button -->
+        <button class="header-user-btn" id="btn-user-auth" aria-label="Account" title="Account & Sync">
+          <span class="user-avatar-circle" id="header-user-avatar">👤</span>
+          <span class="user-name-text" id="header-user-name">Sign In</span>
+        </button>
         <button class="header-icon-btn" id="btn-quick-add" aria-label="Quick Add" title="Quick Add">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -312,6 +317,29 @@
           <h2 class="section-title">Settings & Cloud</h2>
         </div>
 
+        <!-- User Account & Cloud Sync Profile Card -->
+        <div class="glass-card account-profile-card" id="settings-account-card">
+          <div class="account-user-info">
+            <div class="account-avatar-large" id="settings-avatar">👤</div>
+            <div>
+              <div class="account-details-name" id="settings-name">Guest User</div>
+              <div class="account-details-email" id="settings-email">Not signed in — Tasks saved locally</div>
+              <div class="account-sync-badge" id="settings-sync-status">
+                <span class="status-dot"></span>
+                <span id="settings-sync-text">Cloud Sync Ready</span>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-primary" id="btn-open-login" style="padding: 8px 16px; font-size: 13px;">
+              Sign In / Register
+            </button>
+            <button class="btn-secondary" id="btn-user-logout" style="display: none; padding: 8px 16px; font-size: 13px; color: var(--accent-rose); border-color: rgba(244, 63, 94, 0.3);">
+              Sign Out
+            </button>
+          </div>
+        </div>
+
         <!-- Install PWA Card for iPhone -->
         <div class="glass-card" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%); border-color: rgba(6, 182, 212, 0.35);">
           <div style="display: flex; gap: 12px; align-items: center;">
@@ -565,11 +593,80 @@
       </div>
     </div>
 
+    <!-- Modal 5: Authentication (Login & Sign Up) -->
+    <div class="modal-overlay" id="modal-auth">
+      <div class="modal-sheet auth-sheet">
+        <div class="modal-handle"></div>
+        
+        <div class="auth-header">
+          <div class="auth-icon-badge">✨</div>
+          <h3 class="modal-title" id="auth-modal-title">Welcome to Luphonix</h3>
+          <p class="auth-subtitle" id="auth-modal-subtitle">Sign in to sync your tasks, hydration, and Siri voice commands across all devices.</p>
+        </div>
+
+        <!-- Auth Tabs Switcher -->
+        <div class="auth-tab-switch">
+          <button type="button" class="auth-tab-btn active" id="tab-btn-login">Sign In</button>
+          <button type="button" class="auth-tab-btn" id="tab-btn-register">Create Account</button>
+        </div>
+
+        <!-- Form: Sign In -->
+        <form id="form-login" class="auth-form active">
+          <div class="form-group">
+            <label class="form-label" for="login-email">Email Address</label>
+            <input type="email" class="form-input" id="login-email" placeholder="name@example.com" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="login-password">Password</label>
+            <div class="password-input-wrapper">
+              <input type="password" class="form-input" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+              <button type="button" class="btn-toggle-pwd" data-target="login-password" aria-label="Toggle password">👁️</button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary auth-submit-btn" id="btn-submit-login">
+            <span class="btn-text">Sign In & Sync</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+          <p class="auth-switch-prompt">
+            Don't have an account? <a href="#" id="link-switch-to-register">Create one free</a>
+          </p>
+        </form>
+
+        <!-- Form: Register -->
+        <form id="form-register" class="auth-form">
+          <div class="form-group">
+            <label class="form-label" for="register-name">Full Name</label>
+            <input type="text" class="form-input" id="register-name" placeholder="Alex Mercer" required autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="register-email">Email Address</label>
+            <input type="email" class="form-input" id="register-email" placeholder="name@example.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="register-password">Password (min. 6 characters)</label>
+            <div class="password-input-wrapper">
+              <input type="password" class="form-input" id="register-password" minlength="6" placeholder="••••••••" required autocomplete="new-password">
+              <button type="button" class="btn-toggle-pwd" data-target="register-password" aria-label="Toggle password">👁️</button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary auth-submit-btn" id="btn-submit-register">
+            <span class="btn-text">Create Account & Sync</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+          <p class="auth-switch-prompt">
+            Already have an account? <a href="#" id="link-switch-to-login">Sign In</a>
+          </p>
+        </form>
+
+        <button type="button" class="btn-secondary modal-close-btn" style="margin-top: 14px;">Continue as Guest</button>
+      </div>
+    </div>
+
     <!-- Toast Notification Container -->
     <div id="toast-container"></div>
   </div>
 
   <!-- Main JavaScript Logic -->
-  <script src="/app.js?v=2.4"></script>
+  <script src="/app.js?v=2.5"></script>
 </body>
 </html>
