@@ -32,7 +32,7 @@ app.get('/health', async (c) => {
   try {
     const { db } = await import('./db/client.js');
     const res = await db.execute('SELECT 1 as test');
-    dbStatus = 'connected (' + JSON.stringify(res.rows[0]) + ')';
+    dbStatus = 'Turso (libSQL)';
   } catch (err: any) {
     dbStatus = 'error';
     dbError = err.message;

@@ -281,6 +281,28 @@ describe('Luphonix Backend API Test Suite', async () => {
     assert.strictEqual(body.success, false);
     assert.ok(body.error.includes('apiKey'));
   });
+
+  it('18. GET /api/tasks/complete should mark task completed via Siri voice shortcut', async () => {
+    const keyRes = await app.request('/api/auth/webhook-key');
+    const { apiKey } = await keyRes.json();
+
+    // 1. Create a task for Siri
+    const addRes = await app.request(`/api/tasks/add?title=Study%20Swift%20Intents&apiKey=${encodeURIComponent(apiKey)}`);
+    assert.strictEqual(addRes.status, 200);
+
+    // 2. Complete the task using Siri phrase
+    const compRes = await app.request(`/api/tasks/complete?title=study&apiKey=${encodeURIComponent(apiKey)}`);
+    assert.strictEqual(compRes.status, 200);
+    const text = await compRes.text();
+    assert.ok(text.includes('Marked'));
+    assert.ok(text.includes('completed in Luphonix'));
+
+    // 3. Siri queries remaining today tasks: completed task must NOT appear!
+    const siriQueryRes = await app.request(`/api/tasks?filter=today&format=text&apiKey=${encodeURIComponent(apiKey)}`);
+    assert.strictEqual(siriQueryRes.status, 200);
+    const remainingText = await siriQueryRes.text();
+    assert.ok(!remainingText.includes('Study Swift Intents'), 'Completed task should not appear in Siri today tasks');
+  });
 });
 
 

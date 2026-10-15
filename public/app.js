@@ -602,6 +602,42 @@
     const base = state.prefs.backendUrl || window.location.origin;
     try {
       let key = await ensureApiKey();
+
+      // 1. Try fast PATCH first
+      let patchRes = await fetch(`${base}/api/tasks/${encodeURIComponent(task.id)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          title: task.title,
+          is_completed: Boolean(task.is_completed)
+        })
+      });
+
+      if (patchRes.status === 401) {
+        key = await ensureApiKey(true);
+        patchRes = await fetch(`${base}/api/tasks/${encodeURIComponent(task.id)}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify({
+            title: task.title,
+            is_completed: Boolean(task.is_completed)
+          })
+        });
+      }
+
+      if (patchRes.ok) {
+        return;
+      }
+
+      // 2. If PATCH fails (e.g. 404 task not on server yet), upsert via POST /api/tasks
       const payload = {
         id: task.id,
         title: task.title,
@@ -696,6 +732,7 @@
   function setupSiriCopyButtons() {
     const waterBtn = document.getElementById('btn-copy-siri-water');
     const tasksBtn = document.getElementById('btn-copy-siri-tasks');
+    const completeBtn = document.getElementById('btn-copy-siri-complete');
     const copyTokenBtn = document.getElementById('btn-copy-token');
     const refreshBtn = document.getElementById('btn-regenerate-token');
 
@@ -717,6 +754,16 @@
         const url = `${base}/api/tasks?filter=today&format=text&apiKey=${encodeURIComponent(key)}`;
         navigator.clipboard.writeText(url).then(() => {
           showToast('Copied Tasks Webhook URL (with API key)!', 'success');
+        });
+      });
+    }
+
+    if (completeBtn) {
+      completeBtn.addEventListener('click', async () => {
+        const key = await ensureApiKey();
+        const url = `${base}/api/tasks/complete?title=ShortcutInput&format=text&apiKey=${encodeURIComponent(key)}`;
+        navigator.clipboard.writeText(url).then(() => {
+          showToast('Copied Complete Task Webhook URL (with API key)!', 'success');
         });
       });
     }

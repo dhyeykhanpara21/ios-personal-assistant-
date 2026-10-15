@@ -12,7 +12,7 @@ const syncPayloadSchema = z.object({
   tasks: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        id: z.string().min(1),
         title: z.string().min(1),
         description: z.string().nullable().optional(),
         due_at: z.string().datetime().nullable().optional(),
@@ -28,7 +28,7 @@ const syncPayloadSchema = z.object({
   reminders: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        id: z.string().min(1),
         title: z.string().min(1),
         description: z.string().nullable().optional(),
         scheduled_at: z.string().datetime(),
@@ -43,7 +43,7 @@ const syncPayloadSchema = z.object({
   hydration_logs: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        id: z.string().min(1),
         amount_ml: z.number().int().positive(),
         logged_at: z.string().datetime(),
       })

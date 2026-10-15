@@ -33,7 +33,7 @@ tasksApp.get('/', async (c) => {
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  let query = 'SELECT * FROM tasks WHERE user_id = ?';
+  let query = 'SELECT * FROM tasks WHERE (user_id = ? OR user_id = \'user_siri_default\')';
   const args: any[] = [userId];
 
   if (filter === 'completed') {
@@ -48,6 +48,11 @@ tasksApp.get('/', async (c) => {
   } else if (filter === 'upcoming') {
     query += ' AND is_completed = 0 AND due_at > ?';
     args.push(todayEnd.toISOString());
+  } else if (filter === 'all') {
+    // Return all tasks without completion filter
+  } else {
+    // Default (e.g. general query for active tasks): only return uncompleted tasks
+    query += ' AND is_completed = 0';
   }
 
   if (search && search.trim().length > 0) {
@@ -87,7 +92,7 @@ tasksApp.get('/', async (c) => {
 
   let summary = '';
   if (tasks.length === 0) {
-    summary = filter === 'today'
+    summary = (filter === 'today' || !filter)
       ? 'You have no remaining tasks for today in Luphonix!'
       : 'You have no tasks in Luphonix.';
   } else {
@@ -99,13 +104,12 @@ tasksApp.get('/', async (c) => {
   const format = c.req.query('format')?.toLowerCase();
   const accept = c.req.header('accept')?.toLowerCase() || '';
   const userAgent = c.req.header('user-agent')?.toLowerCase() || '';
-  const hasQueryAuth = Boolean(c.req.query('apiKey') || c.req.query('token') || c.req.query('key'));
 
   const isExplicitJson = format === 'json' || accept.includes('application/json');
   const isExplicitText = format === 'text' || c.req.query('text') === '1' || accept.includes('text/plain');
   const isShortcut = userAgent.includes('shortcut') || userAgent.includes('cfnetwork') || userAgent.includes('darwin');
 
-  if (isExplicitText || (!isExplicitJson && (isShortcut || hasQueryAuth))) {
+  if (isExplicitText || (!isExplicitJson && isShortcut)) {
     return c.text(summary);
   }
 
@@ -117,6 +121,77 @@ tasksApp.get('/', async (c) => {
     message: summary,
     speech: summary,
   });
+});
+
+// GET /api/tasks/complete (Hands-free task completion for Siri Shortcuts)
+tasksApp.get('/complete', async (c) => {
+  const userId = c.get('userId');
+  const queryParam =
+    c.req.query('title') ||
+    c.req.query('task') ||
+    c.req.query('text') ||
+    c.req.query('q') ||
+    c.req.query('id');
+
+  const format = c.req.query('format')?.toLowerCase();
+  const accept = c.req.header('accept')?.toLowerCase() || '';
+  const isExplicitJson = format === 'json' || accept.includes('application/json');
+
+  if (!queryParam || !queryParam.trim()) {
+    const errorMsg = 'Please provide the task title to mark as completed in Luphonix.';
+    if (isExplicitJson) {
+      return c.json({ success: false, error: errorMsg }, 400);
+    }
+    return c.text(errorMsg, 400);
+  }
+
+  const cleanQuery = queryParam.trim();
+  const now = new Date().toISOString();
+
+  // Search for an uncompleted task matching ID or title (case-insensitive substring)
+  const findResult = await db.execute({
+    sql: `SELECT * FROM tasks
+          WHERE (user_id = ? OR user_id = 'user_siri_default')
+            AND is_completed = 0
+            AND (id = ? OR LOWER(title) LIKE ?)
+          ORDER BY CASE WHEN id = ? THEN 1 WHEN LOWER(title) = ? THEN 2 ELSE 3 END, created_at DESC
+          LIMIT 1`,
+    args: [userId, cleanQuery, `%${cleanQuery.toLowerCase()}%`, cleanQuery, cleanQuery.toLowerCase()],
+  });
+
+  if (findResult.rows.length === 0) {
+    const notFoundMsg = `Could not find an uncompleted task matching '${cleanQuery}' in Luphonix.`;
+    if (isExplicitJson) {
+      return c.json({ success: false, message: notFoundMsg, error: 'Task not found' }, 404);
+    }
+    return c.text(notFoundMsg, 404);
+  }
+
+  const matchedTask = findResult.rows[0];
+  const taskId = matchedTask.id;
+  const matchedTitle = String(matchedTask.title);
+
+  // Mark task completed
+  await db.execute({
+    sql: 'UPDATE tasks SET is_completed = 1, updated_at = ? WHERE id = ?',
+    args: [now, taskId],
+  });
+
+  const successMsg = `Marked '${matchedTitle}' as completed in Luphonix. Good job!`;
+
+  if (isExplicitJson) {
+    return c.json({
+      success: true,
+      message: successMsg,
+      data: {
+        ...matchedTask,
+        is_completed: true,
+        updated_at: now,
+      },
+    });
+  }
+
+  return c.text(successMsg);
 });
 
 // GET /api/tasks/add (Hands-free task creation for Siri Shortcuts)
@@ -187,7 +262,7 @@ tasksApp.post('/', async (c) => {
       is_completed = excluded.is_completed,
       recurrence_rule = excluded.recurrence_rule,
       updated_at = excluded.updated_at
-    WHERE tasks.user_id = excluded.user_id`,
+    WHERE tasks.user_id = excluded.user_id OR tasks.user_id = 'user_siri_default' OR excluded.user_id = 'user_siri_default'`,
     args: [
       id,
       userId,
@@ -230,7 +305,7 @@ tasksApp.get('/:id', async (c) => {
   const id = c.req.param('id');
 
   const result = await db.execute({
-    sql: 'SELECT * FROM tasks WHERE id = ? AND user_id = ?',
+    sql: 'SELECT * FROM tasks WHERE id = ? AND (user_id = ? OR user_id = \'user_siri_default\')',
     args: [id, userId],
   });
 
@@ -259,7 +334,7 @@ tasksApp.patch('/:id', async (c) => {
   }
 
   const existing = await db.execute({
-    sql: 'SELECT * FROM tasks WHERE id = ? AND user_id = ?',
+    sql: 'SELECT * FROM tasks WHERE id = ? AND (user_id = ? OR user_id = \'user_siri_default\')',
     args: [id, userId],
   });
 
@@ -305,13 +380,13 @@ tasksApp.patch('/:id', async (c) => {
   args.push(id, userId);
 
   await db.execute({
-    sql: `UPDATE tasks SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`,
+    sql: `UPDATE tasks SET ${fields.join(', ')} WHERE id = ? AND (user_id = ? OR user_id = 'user_siri_default')`,
     args,
   });
 
   const updatedResult = await db.execute({
-    sql: 'SELECT * FROM tasks WHERE id = ? AND user_id = ?',
-    args: [id, userId],
+    sql: 'SELECT * FROM tasks WHERE id = ?',
+    args: [id],
   });
 
   return c.json({

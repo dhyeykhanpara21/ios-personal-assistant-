@@ -8,8 +8,17 @@ public struct GetTodayTasksIntent: AppIntent {
     public init() {}
     
     public func perform() async throws -> some ProvidesDialog & ReturnsValue<[String]> {
-        let allTasks = StorageManager.shared.getTasks()
-        let todayPending = allTasks.filter { $0.isDueToday && !$0.isCompleted }
+        // Attempt quick cloud sync so tasks checked on web or another device are recognized
+        let allTasks: [TaskItem]
+        if let cloudTasks = try? await withTimeout(seconds: 1.5, operation: {
+            try await APIClient.shared.fetchTasks(filter: "today")
+        }) {
+            allTasks = cloudTasks
+        } else {
+            allTasks = StorageManager.shared.getTasks()
+        }
+
+        let todayPending = allTasks.filter { ($0.isDueToday || $0.dueAt == nil) && !$0.isCompleted }
         
         let titles = todayPending.map { $0.title }
         let dialogMessage: LocalizedStringResource
@@ -24,5 +33,20 @@ public struct GetTodayTasksIntent: AppIntent {
         }
         
         return .result(value: titles, dialog: IntentDialog(dialogMessage))
+    }
+}
+
+private func withTimeout<T: Sendable>(seconds: TimeInterval, operation: @escaping @Sendable () async throws -> T) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask {
+            try await operation()
+        }
+        group.addTask {
+            try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            throw CancellationError()
+        }
+        let result = try await group.next()!
+        group.cancelAll()
+        return result
     }
 }

@@ -188,7 +188,7 @@ public final class APIClient {
             var data: [BackendTask]
         }
         
-        // Backend task format mapper
+        // Backend task format mapper with robust type-tolerant decoding
         struct BackendTask: Codable {
             var id: String
             var user_id: String
@@ -197,10 +197,36 @@ public final class APIClient {
             var due_at: String?
             var priority: String
             var category: String
-            var is_completed: Int
+            var is_completed: Bool
             var recurrence_rule: String?
             var created_at: String
             var updated_at: String
+
+            enum CodingKeys: String, CodingKey {
+                case id, user_id, title, description, due_at, priority, category, is_completed, recurrence_rule, created_at, updated_at
+            }
+
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                id = try container.decode(String.self, forKey: .id)
+                user_id = (try? container.decode(String.self, forKey: .user_id)) ?? ""
+                title = try container.decode(String.self, forKey: .title)
+                description = try? container.decode(String.self, forKey: .description)
+                due_at = try? container.decode(String.self, forKey: .due_at)
+                priority = (try? container.decode(String.self, forKey: .priority)) ?? "medium"
+                category = (try? container.decode(String.self, forKey: .category)) ?? "other"
+                recurrence_rule = try? container.decode(String.self, forKey: .recurrence_rule)
+                created_at = (try? container.decode(String.self, forKey: .created_at)) ?? ""
+                updated_at = (try? container.decode(String.self, forKey: .updated_at)) ?? ""
+
+                if let boolVal = try? container.decode(Bool.self, forKey: .is_completed) {
+                    is_completed = boolVal
+                } else if let intVal = try? container.decode(Int.self, forKey: .is_completed) {
+                    is_completed = (intVal == 1)
+                } else {
+                    is_completed = false
+                }
+            }
         }
         
         do {
@@ -216,7 +242,7 @@ public final class APIClient {
                     dueAt: bt.due_at.flatMap { isoFormatter.date(from: $0) },
                     priority: Priority(rawValue: bt.priority) ?? .medium,
                     category: ItemCategory(rawValue: bt.category) ?? .other,
-                    isCompleted: bt.is_completed == 1,
+                    isCompleted: bt.is_completed,
                     recurrenceRule: RecurrenceRule(rawValue: bt.recurrence_rule ?? "none") ?? .none,
                     createdAt: isoFormatter.date(from: bt.created_at) ?? Date(),
                     updatedAt: isoFormatter.date(from: bt.updated_at) ?? Date()
@@ -258,6 +284,7 @@ public final class APIClient {
         StorageManager.shared.updateTask(task)
         let isoFormatter = ISO8601DateFormatter()
         let payload: [String: Any?] = [
+            "id": task.id,
             "title": task.title,
             "description": task.description,
             "due_at": task.dueAt.map { isoFormatter.string(from: $0) },
@@ -268,7 +295,36 @@ public final class APIClient {
         ]
         let body = try JSONSerialization.data(withJSONObject: payload.compactMapValues { $0 })
         struct Res: Codable { var success: Bool }
-        let _: Res? = try? await request(endpoint: "/api/tasks/\(task.id)", method: "PATCH", body: body)
+        do {
+            let _: Res = try await request(endpoint: "/api/tasks/\(task.id)", method: "PATCH", body: body)
+        } catch {
+            // Fall back to upsert POST /api/tasks if task not found on server
+            _ = try? await createTask(task)
+        }
+    }
+    
+    public func completeTask(query: String) async throws -> TaskItem {
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        struct CompleteTaskWrapper: Codable {
+            var success: Bool
+            var message: String
+            var data: TaskResponseData?
+        }
+        struct TaskResponseData: Codable {
+            var id: String
+            var title: String
+            var user_id: String?
+            var is_completed: Bool?
+        }
+        let res: CompleteTaskWrapper = try await request(endpoint: "/api/tasks/complete?q=\(encoded)&format=json")
+        var task = TaskItem(
+            id: res.data?.id ?? UUID().uuidString,
+            userId: res.data?.user_id ?? "",
+            title: res.data?.title ?? query,
+            isCompleted: true
+        )
+        StorageManager.shared.updateTask(task)
+        return task
     }
     
     public func deleteTask(id: String) async throws {

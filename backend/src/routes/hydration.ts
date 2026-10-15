@@ -162,7 +162,7 @@ async function handleWaterLog(c: any) {
   const isExplicitText = format === 'text' || c.req.query('text') === '1' || accept.includes('text/plain');
   const isShortcut = userAgent.includes('shortcut') || userAgent.includes('cfnetwork') || userAgent.includes('darwin');
 
-  if (isExplicitText || (!isExplicitJson && (isShortcut || hasQueryAuth))) {
+  if (isExplicitText || (!isExplicitJson && isShortcut)) {
     return c.text(msg);
   }
 

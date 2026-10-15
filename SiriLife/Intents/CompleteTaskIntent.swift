@@ -23,10 +23,24 @@ public struct CompleteTaskIntent: AppIntent {
             tasks[idx].updatedAt = Date()
             StorageManager.shared.saveTasks(tasks)
             
-            let matchedTitle = tasks[idx].title
+            let matchedTask = tasks[idx]
+            let matchedTitle = matchedTask.title
+            
+            // Sync completion to cloud backend
+            Task {
+                _ = try? await APIClient.shared.updateTask(matchedTask)
+            }
+            
             let dialogMessage: LocalizedStringResource = "Marked '\(matchedTitle)' as completed in Luphonix. Good job!"
             return .result(value: true, dialog: IntentDialog(dialogMessage))
         } else {
+            // Also attempt completing via cloud API if task was created in cloud
+            if let cloudTask = try? await APIClient.shared.completeTask(query: taskTitle) {
+                StorageManager.shared.updateTask(cloudTask)
+                let dialogMessage: LocalizedStringResource = "Marked '\(cloudTask.title)' as completed in Luphonix. Good job!"
+                return .result(value: true, dialog: IntentDialog(dialogMessage))
+            }
+            
             let dialogMessage: LocalizedStringResource = "Could not find an uncompleted task matching '\(taskTitle)' in Luphonix."
             return .result(value: false, dialog: IntentDialog(dialogMessage))
         }
