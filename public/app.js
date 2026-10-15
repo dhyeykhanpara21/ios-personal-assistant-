@@ -70,7 +70,12 @@
   function loadStorage(key, fallback) {
     try {
       const data = localStorage.getItem(key);
-      return data ? JSON.parse(data) : fallback;
+      if (data === null || data === undefined) return fallback;
+      try {
+        return JSON.parse(data);
+      } catch {
+        return data; // Raw string (such as JWT token)
+      }
     } catch (e) {
       return fallback;
     }
@@ -78,7 +83,11 @@
 
   function saveStorage(key, data) {
     try {
-      localStorage.setItem(key, JSON.stringify(data));
+      if (typeof data === 'string') {
+        localStorage.setItem(key, data);
+      } else {
+        localStorage.setItem(key, JSON.stringify(data));
+      }
     } catch (e) {
       console.warn('Storage save failed:', e);
     }
@@ -762,6 +771,7 @@
 
   // --- Authentication Engine (Sign In & Sign Up) ---
   function updateAuthUI() {
+    const userAuthPill = document.getElementById('user-auth-pill');
     const nameSpan = document.getElementById('user-display-name');
     const avatarIcon = document.getElementById('user-avatar-icon');
     const accountName = document.getElementById('account-name-val');
@@ -770,6 +780,7 @@
     const accountAvatarChar = document.getElementById('account-avatar-char');
 
     if (state.user && state.token) {
+      if (userAuthPill) userAuthPill.classList.add('logged-in');
       const initial = (state.user.name || state.user.email || 'U').charAt(0).toUpperCase();
       if (nameSpan) nameSpan.textContent = state.user.name ? state.user.name.split(' ')[0] : 'Account';
       if (avatarIcon) avatarIcon.textContent = initial;
@@ -778,6 +789,7 @@
       if (accountId) accountId.textContent = state.user.id || '';
       if (accountAvatarChar) accountAvatarChar.textContent = initial;
     } else {
+      if (userAuthPill) userAuthPill.classList.remove('logged-in');
       if (nameSpan) nameSpan.textContent = 'Sign In';
       if (avatarIcon) avatarIcon.textContent = '👤';
       if (accountName) accountName.textContent = 'Guest / Siri Default';
@@ -790,12 +802,15 @@
   async function loginUser(email, password) {
     const base = getBackendBaseUrl();
     const errorDiv = document.getElementById('auth-error-msg');
+    const errorText = document.getElementById('auth-error-text');
     const submitBtn = document.getElementById('btn-submit-login');
+    const btnText = submitBtn?.querySelector('.btn-text');
+    const btnSpinner = submitBtn?.querySelector('.btn-spinner');
+
     if (errorDiv) errorDiv.style.display = 'none';
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Signing in...';
-    }
+    if (submitBtn) submitBtn.disabled = true;
+    if (btnText) btnText.textContent = 'Signing in...';
+    if (btnSpinner) btnSpinner.classList.remove('hidden');
 
     try {
       const res = await fetch(`${base}/api/auth/login`, {
@@ -805,7 +820,7 @@
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Login failed. Please check your credentials.');
+        throw new Error(data.error || 'Invalid email or password. Please try again.');
       }
 
       state.token = data.data.token;
@@ -819,35 +834,35 @@
       // Refresh cloud data for logged-in user
       syncAllWithCloud(true);
     } catch (err) {
-      if (errorDiv) {
-        errorDiv.textContent = err.message;
-        errorDiv.style.display = 'block';
-      } else {
-        showToast(err.message, 'error');
-      }
+      if (errorText) errorText.textContent = err.message;
+      if (errorDiv) errorDiv.style.display = 'flex';
+      showToast(err.message, 'error');
     } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Sign In to Luphonix';
-      }
+      if (submitBtn) submitBtn.disabled = false;
+      if (btnText) btnText.textContent = 'Sign In to Luphonix';
+      if (btnSpinner) btnSpinner.classList.add('hidden');
     }
   }
 
   async function registerUser(name, email, password) {
     const base = getBackendBaseUrl();
     const errorDiv = document.getElementById('auth-error-msg');
+    const errorText = document.getElementById('auth-error-text');
     const submitBtn = document.getElementById('btn-submit-signup');
+    const btnText = submitBtn?.querySelector('.btn-text');
+    const btnSpinner = submitBtn?.querySelector('.btn-spinner');
+
     if (errorDiv) errorDiv.style.display = 'none';
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Creating account...';
-    }
+    if (submitBtn) submitBtn.disabled = true;
+    if (btnText) btnText.textContent = 'Creating account...';
+    if (btnSpinner) btnSpinner.classList.remove('hidden');
 
     try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       const res = await fetch(`${base}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ name, email, password, timezone })
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -865,17 +880,13 @@
       // Refresh cloud data
       syncAllWithCloud(true);
     } catch (err) {
-      if (errorDiv) {
-        errorDiv.textContent = err.message;
-        errorDiv.style.display = 'block';
-      } else {
-        showToast(err.message, 'error');
-      }
+      if (errorText) errorText.textContent = err.message;
+      if (errorDiv) errorDiv.style.display = 'flex';
+      showToast(err.message, 'error');
     } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Create My Account';
-      }
+      if (submitBtn) submitBtn.disabled = false;
+      if (btnText) btnText.textContent = 'Create My Account';
+      if (btnSpinner) btnSpinner.classList.add('hidden');
     }
   }
 
@@ -1480,6 +1491,8 @@
     const formLogin = document.getElementById('form-auth-login');
     const formSignup = document.getElementById('form-auth-signup');
     const authTitle = document.getElementById('auth-modal-title');
+    const authSubtitle = document.getElementById('auth-modal-subtitle');
+    const authHeaderIcon = document.getElementById('auth-header-icon');
     const authError = document.getElementById('auth-error-msg');
 
     if (tabBtnLogin && tabBtnSignup) {
@@ -1488,8 +1501,12 @@
         tabBtnSignup.classList.remove('active');
         if (formLogin) formLogin.style.display = 'block';
         if (formSignup) formSignup.style.display = 'none';
-        if (authTitle) authTitle.textContent = 'Sign In to Luphonix';
+        if (authTitle) authTitle.textContent = 'Welcome Back';
+        if (authSubtitle) authSubtitle.textContent = 'Sign in to access your cloud tasks and personalized Siri shortcuts.';
+        if (authHeaderIcon) authHeaderIcon.textContent = '✨';
         if (authError) authError.style.display = 'none';
+        const emailInput = document.getElementById('login-email');
+        if (emailInput) setTimeout(() => emailInput.focus(), 150);
       });
 
       tabBtnSignup.addEventListener('click', () => {
@@ -1498,9 +1515,45 @@
         if (formSignup) formSignup.style.display = 'block';
         if (formLogin) formLogin.style.display = 'none';
         if (authTitle) authTitle.textContent = 'Create New Account';
+        if (authSubtitle) authSubtitle.textContent = 'Sync tasks, hydration, and Siri voice shortcuts across all devices.';
+        if (authHeaderIcon) authHeaderIcon.textContent = '🚀';
         if (authError) authError.style.display = 'none';
+        const nameInput = document.getElementById('signup-name');
+        if (nameInput) setTimeout(() => nameInput.focus(), 150);
       });
     }
+
+    const linkSwitchSignup = document.getElementById('link-switch-to-signup');
+    if (linkSwitchSignup && tabBtnSignup) {
+      linkSwitchSignup.addEventListener('click', (e) => {
+        e.preventDefault();
+        tabBtnSignup.click();
+      });
+    }
+
+    const linkSwitchLogin = document.getElementById('link-switch-to-login');
+    if (linkSwitchLogin && tabBtnLogin) {
+      linkSwitchLogin.addEventListener('click', (e) => {
+        e.preventDefault();
+        tabBtnLogin.click();
+      });
+    }
+
+    // Password Visibility Toggles
+    document.querySelectorAll('.pwd-toggle-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        if (input.type === 'password') {
+          input.type = 'text';
+          btn.textContent = '🔒';
+        } else {
+          input.type = 'password';
+          btn.textContent = '👁️';
+        }
+      });
+    });
 
     if (formLogin) {
       formLogin.addEventListener('submit', (e) => {
