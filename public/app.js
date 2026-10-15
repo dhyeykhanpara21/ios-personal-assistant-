@@ -12,8 +12,8 @@
   const STORAGE_KEY_REMINDERS = 'luphonix_reminders_v1';
   const STORAGE_KEY_PREFS = 'luphonix_preferences_v1';
   const STORAGE_KEY_API_KEY = 'luphonix_api_key_v1';
-  const STORAGE_KEY_TOKEN = 'luphonix_token_v1';
-  const STORAGE_KEY_USER = 'luphonix_user_v1';
+  const STORAGE_KEY_AUTH_TOKEN = 'luphonix_auth_token_v1';
+  const STORAGE_KEY_AUTH_USER = 'luphonix_auth_user_v1';
 
   // Default sample data for instant wow effect on first open
   const DEFAULT_TASKS = [
@@ -57,8 +57,8 @@
     waterLogs: loadStorage(STORAGE_KEY_WATER, DEFAULT_WATER),
     reminders: loadStorage(STORAGE_KEY_REMINDERS, DEFAULT_REMINDERS),
     prefs: loadStorage(STORAGE_KEY_PREFS, DEFAULT_PREFS),
-    user: loadStorage(STORAGE_KEY_USER, null),
-    token: localStorage.getItem(STORAGE_KEY_TOKEN) || '',
+    token: loadStorage(STORAGE_KEY_AUTH_TOKEN, null),
+    user: loadStorage(STORAGE_KEY_AUTH_USER, null),
     currentFilter: 'all',
     currentReqFilter: 'all',
     searchQuery: '',
@@ -81,246 +81,6 @@
       localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
       console.warn('Storage save failed:', e);
-    }
-  }
-
-  // --- Authentication & Account State ---
-  function updateAuthUI() {
-    const user = state.user;
-    const headerAvatar = document.getElementById('header-user-avatar');
-    const headerName = document.getElementById('header-user-name');
-    const settingsAvatar = document.getElementById('settings-avatar');
-    const settingsName = document.getElementById('settings-name');
-    const settingsEmail = document.getElementById('settings-email');
-    const settingsSyncBadge = document.getElementById('settings-sync-status');
-    const settingsSyncText = document.getElementById('settings-sync-text');
-    const btnOpenLogin = document.getElementById('btn-open-login');
-    const btnLogout = document.getElementById('btn-user-logout');
-
-    if (user && state.token) {
-      const initial = (user.name && user.name.trim().length > 0) ? user.name.trim().charAt(0).toUpperCase() : 'U';
-      const firstName = user.name ? user.name.trim().split(' ')[0] : 'User';
-
-      if (headerAvatar) headerAvatar.textContent = initial;
-      if (headerName) headerName.textContent = firstName;
-      if (settingsAvatar) settingsAvatar.textContent = initial;
-      if (settingsName) settingsName.textContent = user.name || 'Luphonix User';
-      if (settingsEmail) settingsEmail.textContent = user.email || '';
-
-      if (settingsSyncBadge) {
-        settingsSyncBadge.classList.add('synced');
-      }
-      if (settingsSyncText) {
-        settingsSyncText.textContent = 'Cloud Sync Active (Turso DB)';
-      }
-
-      if (btnOpenLogin) btnOpenLogin.style.display = 'none';
-      if (btnLogout) btnLogout.style.display = 'inline-flex';
-    } else {
-      if (headerAvatar) headerAvatar.textContent = '👤';
-      if (headerName) headerName.textContent = 'Sign In';
-      if (settingsAvatar) settingsAvatar.textContent = '👤';
-      if (settingsName) settingsName.textContent = 'Guest User';
-      if (settingsEmail) settingsEmail.textContent = 'Not signed in — Tasks saved locally';
-
-      if (settingsSyncBadge) {
-        settingsSyncBadge.classList.remove('synced');
-      }
-      if (settingsSyncText) {
-        settingsSyncText.textContent = 'Cloud Sync Ready (Guest)';
-      }
-
-      if (btnOpenLogin) btnOpenLogin.style.display = 'inline-flex';
-      if (btnLogout) btnLogout.style.display = 'none';
-    }
-  }
-
-  function switchAuthTab(tab) {
-    const tabLogin = document.getElementById('tab-btn-login');
-    const tabRegister = document.getElementById('tab-btn-register');
-    const formLogin = document.getElementById('form-login');
-    const formRegister = document.getElementById('form-register');
-    const titleEl = document.getElementById('auth-modal-title');
-    const subtitleEl = document.getElementById('auth-modal-subtitle');
-
-    if (tab === 'login') {
-      if (tabLogin) tabLogin.classList.add('active');
-      if (tabRegister) tabRegister.classList.remove('active');
-      if (formLogin) formLogin.classList.add('active');
-      if (formRegister) formRegister.classList.remove('active');
-      if (titleEl) titleEl.textContent = 'Welcome Back';
-      if (subtitleEl) subtitleEl.textContent = 'Sign in to access your cloud tasks and personalized Siri shortcuts.';
-      const emailInput = document.getElementById('login-email');
-      if (emailInput) setTimeout(() => emailInput.focus(), 150);
-    } else {
-      if (tabRegister) tabRegister.classList.add('active');
-      if (tabLogin) tabLogin.classList.remove('active');
-      if (formRegister) formRegister.classList.add('active');
-      if (formLogin) formLogin.classList.remove('active');
-      if (titleEl) titleEl.textContent = 'Create Luphonix Account';
-      if (subtitleEl) subtitleEl.textContent = 'Sync your tasks, water logs, and Siri commands seamlessly across all your devices.';
-      const nameInput = document.getElementById('register-name');
-      if (nameInput) setTimeout(() => nameInput.focus(), 150);
-    }
-  }
-
-  function openAuthModal(tab = 'login') {
-    switchAuthTab(tab);
-    openModal('modal-auth');
-  }
-
-  async function handleLogin(email, password, submitBtn) {
-    const base = getBackendBaseUrl();
-    const btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
-    const btnSpinner = submitBtn ? submitBtn.querySelector('.btn-spinner') : null;
-
-    if (submitBtn) submitBtn.disabled = true;
-    if (btnText) btnText.style.opacity = '0.5';
-    if (btnSpinner) btnSpinner.classList.remove('hidden');
-
-    try {
-      const res = await fetch(`${base}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok && data.success && data.data) {
-        state.token = data.data.token;
-        state.user = data.data.user;
-        localStorage.setItem(STORAGE_KEY_TOKEN, state.token);
-        saveStorage(STORAGE_KEY_USER, state.user);
-
-        updateAuthUI();
-        closeModal('modal-auth');
-        showToast(`Welcome back, ${state.user.name || 'User'}! 🚀`, 'success');
-
-        // Fetch user-scoped Webhook API key for Siri
-        await ensureApiKey(true);
-
-        // Fetch user's tasks from cloud and sync
-        await syncAllWithCloud(true);
-      } else {
-        const errorMsg = data.error || 'Invalid email or password. Please try again.';
-        showToast(errorMsg, 'error');
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      showToast('Network error while signing in. Please check your connection.', 'error');
-    } finally {
-      if (submitBtn) submitBtn.disabled = false;
-      if (btnText) btnText.style.opacity = '1';
-      if (btnSpinner) btnSpinner.classList.add('hidden');
-    }
-  }
-
-  async function handleRegister(name, email, password, submitBtn) {
-    const base = getBackendBaseUrl();
-    const btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
-    const btnSpinner = submitBtn ? submitBtn.querySelector('.btn-spinner') : null;
-
-    if (submitBtn) submitBtn.disabled = true;
-    if (btnText) btnText.style.opacity = '0.5';
-    if (btnSpinner) btnSpinner.classList.remove('hidden');
-
-    try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-      const res = await fetch(`${base}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ name, email, password, timezone })
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok && data.success && data.data) {
-        state.token = data.data.token;
-        state.user = data.data.user;
-        localStorage.setItem(STORAGE_KEY_TOKEN, state.token);
-        saveStorage(STORAGE_KEY_USER, state.user);
-
-        updateAuthUI();
-        closeModal('modal-auth');
-        showToast(`Account created! Welcome, ${state.user.name}! ✨`, 'success');
-
-        // Fetch user-scoped Webhook API key for Siri
-        await ensureApiKey(true);
-
-        // Push any genuine local tasks to cloud under new user and pull synced state
-        await syncAllWithCloud(true);
-      } else {
-        const errorMsg = data.error || (data.details && data.details[0] && data.details[0].message) || 'Registration failed. Please try again.';
-        showToast(errorMsg, 'error');
-      }
-    } catch (err) {
-      console.error('Register error:', err);
-      showToast('Network error while creating account.', 'error');
-    } finally {
-      if (submitBtn) submitBtn.disabled = false;
-      if (btnText) btnText.style.opacity = '1';
-      if (btnSpinner) btnSpinner.classList.add('hidden');
-    }
-  }
-
-  async function handleLogout() {
-    state.token = '';
-    state.user = null;
-    localStorage.removeItem(STORAGE_KEY_TOKEN);
-    localStorage.removeItem(STORAGE_KEY_USER);
-    localStorage.removeItem(STORAGE_KEY_API_KEY);
-    currentApiKey = '';
-
-    // Revert tasks to sample tasks so guest view is clean
-    state.tasks = [...DEFAULT_TASKS];
-    saveStorage(STORAGE_KEY_TASKS, state.tasks);
-    renderTasks();
-
-    await ensureApiKey(true);
-    updateAuthUI();
-    showToast('Signed out successfully. Switched to Guest Mode.', 'info');
-  }
-
-  async function verifySession() {
-    if (!state.token) return;
-    try {
-      const base = getBackendBaseUrl();
-      const res = await fetch(`${base}/api/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${state.token}`,
-          'Accept': 'application/json'
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.data && data.data.user) {
-          state.user = data.data.user;
-          saveStorage(STORAGE_KEY_USER, state.user);
-          if (data.data.preferences && data.data.preferences.daily_water_goal_ml) {
-            state.prefs.dailyWaterGoal = Number(data.data.preferences.daily_water_goal_ml);
-            saveStorage(STORAGE_KEY_PREFS, state.prefs);
-            updateHydrationRings();
-          }
-          updateAuthUI();
-        }
-      } else if (res.status === 401) {
-        // Token invalid or expired
-        console.warn('Session expired, switching to guest mode');
-        state.token = '';
-        state.user = null;
-        localStorage.removeItem(STORAGE_KEY_TOKEN);
-        localStorage.removeItem(STORAGE_KEY_USER);
-        updateAuthUI();
-      }
-    } catch (e) {
-      console.warn('Session verification network error (offline?):', e);
     }
   }
 
@@ -645,22 +405,21 @@
     const base = getBackendBaseUrl();
     try {
       let key = await ensureApiKey();
-      const authToken = state.token || key;
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 4000);
-      let res = await fetch(`${base}/api/tasks/${encodeURIComponent(id)}?apiKey=${encodeURIComponent(authToken)}`, {
+      let res = await fetch(`${base}/api/tasks/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${authToken}`,
+          'Authorization': `Bearer ${key}`,
           'Accept': 'application/json'
         },
         signal: controller.signal
       }).catch(() => null);
       clearTimeout(timer);
 
-      if (res && res.status === 401 && !state.token) {
+      if (res && res.status === 401) {
         key = await ensureApiKey(true);
-        await fetch(`${base}/api/tasks/${encodeURIComponent(id)}?apiKey=${encodeURIComponent(key)}`, {
+        await fetch(`${base}/api/tasks/${encodeURIComponent(id)}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${key}`,
@@ -815,14 +574,7 @@
     }
 
     try {
-      const headers = { 'cache': 'no-store' };
-      if (state.token) {
-        headers['Authorization'] = `Bearer ${state.token}`;
-      }
-      const res = await fetch(`${base}/api/auth/webhook-key`, {
-        headers,
-        cache: 'no-store'
-      });
+      const res = await fetch(`${base}/api/auth/webhook-key`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (data && data.apiKey) {
@@ -837,7 +589,7 @@
     }
 
     if (!currentApiKey) {
-      currentApiKey = state.token || 'luphonix-siri-master-key';
+      currentApiKey = 'luphonix-siri-master-key';
       localStorage.setItem(STORAGE_KEY_API_KEY, currentApiKey);
     }
     updateApiKeyUI(currentApiKey);
@@ -848,16 +600,27 @@
     const base = getBackendBaseUrl();
     try {
       let key = await ensureApiKey();
-      const authToken = state.token || key;
-      await fetch(`${base}/api/hydration?apiKey=${encodeURIComponent(authToken)}`, {
+      let res = await fetch(`${base}/api/hydration`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${key}`
         },
         body: JSON.stringify({ amount_ml: log.amount_ml, logged_at: log.timestamp })
       });
+      if (res.status === 401) {
+        key = await ensureApiKey(true);
+        await fetch(`${base}/api/hydration`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify({ amount_ml: log.amount_ml, logged_at: log.timestamp })
+        });
+      }
     } catch (e) {
       // Offline fallback silent catch
     }
@@ -868,24 +631,22 @@
     const base = getBackendBaseUrl();
     try {
       const key = await ensureApiKey();
-      const authToken = state.token || key;
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 4000);
 
       // Fast toggle via GET /api/tasks/toggle?id=... (works unconditionally without body hang)
-      const res = await fetch(`${base}/api/tasks/toggle?id=${encodeURIComponent(task.id)}&apiKey=${encodeURIComponent(authToken)}`, {
-        headers: { 'Authorization': `Bearer ${authToken}` },
+      const res = await fetch(`${base}/api/tasks/toggle?id=${encodeURIComponent(task.id)}&apiKey=${encodeURIComponent(key)}`, {
         signal: controller.signal
       }).catch(() => null);
       clearTimeout(timer);
 
       if (!res || !res.ok) {
         // Fallback to query param on PATCH
-        await fetch(`${base}/api/tasks/${encodeURIComponent(task.id)}?is_completed=${task.is_completed}&apiKey=${encodeURIComponent(authToken)}`, {
+        await fetch(`${base}/api/tasks/${encodeURIComponent(task.id)}?is_completed=${task.is_completed}&apiKey=${encodeURIComponent(key)}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+            'Authorization': `Bearer ${key}`
           },
           body: JSON.stringify({ is_completed: Boolean(task.is_completed) })
         }).catch(() => {});
@@ -900,29 +661,8 @@
     const base = getBackendBaseUrl();
     try {
       let key = await ensureApiKey();
-      const authToken = state.token || key;
 
-      // 1. Hands-free fast GET /api/tasks/add with format=json
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
-      const url = `${base}/api/tasks/add?title=${encodeURIComponent(task.title)}&category=${encodeURIComponent(task.category || 'work')}&priority=${encodeURIComponent(task.priority || 'medium')}&apiKey=${encodeURIComponent(authToken)}&format=json`;
-
-      const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${authToken}` },
-        signal: controller.signal
-      }).catch(() => null);
-      clearTimeout(timer);
-
-      if (res && res.ok) {
-        const body = await res.json().catch(() => null);
-        if (body && body.data && body.data.id) {
-          task.id = body.data.id;
-          saveStorage(STORAGE_KEY_TASKS, state.tasks);
-        }
-        return;
-      }
-
-      // 2. Fallback to POST /api/tasks
+      // Upsert using POST /api/tasks preserving task.id so no duplicates are created
       const payload = {
         id: task.id,
         title: task.title,
@@ -936,7 +676,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${key}`
         },
         body: JSON.stringify(payload)
       }).catch(() => null);
@@ -955,14 +695,13 @@
     const base = getBackendBaseUrl();
     try {
       let key = await ensureApiKey();
-      const authToken = state.token || key;
 
       // 1. Pull cloud tasks down FIRST so UI immediately reflects cloud state
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 6000);
-      let res = await fetch(`${base}/api/tasks?filter=all&apiKey=${encodeURIComponent(authToken)}`, {
+      let res = await fetch(`${base}/api/tasks?filter=all`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`,
+          'Authorization': `Bearer ${key}`,
           'Accept': 'application/json'
         },
         signal: controller.signal
@@ -972,9 +711,9 @@
       });
       clearTimeout(timeoutId);
 
-      if (res && res.status === 401 && !state.token) {
+      if (res && res.status === 401) {
         key = await ensureApiKey(true);
-        res = await fetch(`${base}/api/tasks?filter=all&apiKey=${encodeURIComponent(key)}`, {
+        res = await fetch(`${base}/api/tasks?filter=all`, {
           headers: {
             'Authorization': `Bearer ${key}`,
             'Accept': 'application/json'
@@ -1029,15 +768,6 @@
     const accountEmail = document.getElementById('account-email-val');
     const accountId = document.getElementById('account-id-val');
     const accountAvatarChar = document.getElementById('account-avatar-char');
-    const settingsPill = document.getElementById('settings-auth-status-pill');
-
-    // Page-level elements
-    const pageLoggedIn = document.getElementById('auth-page-logged-in');
-    const pageForms = document.getElementById('auth-page-forms');
-    const pageAvatar = document.getElementById('auth-page-avatar');
-    const pageName = document.getElementById('auth-page-name');
-    const pageEmail = document.getElementById('auth-page-email');
-    const pageUid = document.getElementById('auth-page-uid');
 
     if (state.user && state.token) {
       const initial = (state.user.name || state.user.email || 'U').charAt(0).toUpperCase();
@@ -1047,18 +777,6 @@
       if (accountEmail) accountEmail.textContent = state.user.email || '';
       if (accountId) accountId.textContent = state.user.id || '';
       if (accountAvatarChar) accountAvatarChar.textContent = initial;
-      if (settingsPill) {
-        settingsPill.textContent = 'Active: ' + (state.user.name ? state.user.name.split(' ')[0] : 'User');
-        settingsPill.style.background = 'rgba(16, 185, 129, 0.2)';
-        settingsPill.style.color = '#34D399';
-      }
-
-      if (pageLoggedIn) pageLoggedIn.style.display = 'block';
-      if (pageForms) pageForms.style.display = 'none';
-      if (pageAvatar) pageAvatar.textContent = initial;
-      if (pageName) pageName.textContent = state.user.name || 'User';
-      if (pageEmail) pageEmail.textContent = state.user.email || '';
-      if (pageUid) pageUid.textContent = state.user.id || '';
     } else {
       if (nameSpan) nameSpan.textContent = 'Sign In';
       if (avatarIcon) avatarIcon.textContent = '👤';
@@ -1066,26 +784,13 @@
       if (accountEmail) accountEmail.textContent = 'user@luphonix.local';
       if (accountId) accountId.textContent = 'user_siri_default';
       if (accountAvatarChar) accountAvatarChar.textContent = 'G';
-      if (settingsPill) {
-        settingsPill.textContent = 'Guest Mode';
-        settingsPill.style.background = 'rgba(6, 182, 212, 0.2)';
-        settingsPill.style.color = '#38BDF8';
-      }
-
-      if (pageLoggedIn) pageLoggedIn.style.display = 'none';
-      if (pageForms) pageForms.style.display = 'block';
     }
   }
 
-  async function loginUser(email, password, source = 'modal') {
+  async function loginUser(email, password) {
     const base = getBackendBaseUrl();
-    const errorDiv = source === 'page'
-      ? document.getElementById('auth-page-error-msg')
-      : document.getElementById('auth-error-msg');
-    const submitBtn = source === 'page'
-      ? document.getElementById('btn-submit-page-login')
-      : document.getElementById('btn-submit-login');
-
+    const errorDiv = document.getElementById('auth-error-msg');
+    const submitBtn = document.getElementById('btn-submit-login');
     if (errorDiv) errorDiv.style.display = 'none';
     if (submitBtn) {
       submitBtn.disabled = true;
@@ -1123,20 +828,15 @@
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Sign In';
+        submitBtn.textContent = 'Sign In to Luphonix';
       }
     }
   }
 
-  async function registerUser(name, email, password, source = 'modal') {
+  async function registerUser(name, email, password) {
     const base = getBackendBaseUrl();
-    const errorDiv = source === 'page'
-      ? document.getElementById('auth-page-error-msg')
-      : document.getElementById('auth-error-msg');
-    const submitBtn = source === 'page'
-      ? document.getElementById('btn-submit-page-signup')
-      : document.getElementById('btn-submit-signup');
-
+    const errorDiv = document.getElementById('auth-error-msg');
+    const submitBtn = document.getElementById('btn-submit-signup');
     if (errorDiv) errorDiv.style.display = 'none';
     if (submitBtn) {
       submitBtn.disabled = true;
@@ -1174,7 +874,7 @@
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Create Account';
+        submitBtn.textContent = 'Create My Account';
       }
     }
   }
@@ -1761,104 +1461,6 @@
       }
     }, 15000);
 
-    // User Account Profile & Modal Handlers
-    const btnUserAuth = document.getElementById('btn-user-auth');
-    if (btnUserAuth) {
-      btnUserAuth.addEventListener('click', () => {
-        if (state.token && state.user) {
-          switchView('settings');
-        } else {
-          openAuthModal('login');
-        }
-      });
-    }
-
-    const btnOpenLogin = document.getElementById('btn-open-login');
-    if (btnOpenLogin) {
-      btnOpenLogin.addEventListener('click', () => openAuthModal('login'));
-    }
-
-    const btnUserLogout = document.getElementById('btn-user-logout');
-    if (btnUserLogout) {
-      btnUserLogout.addEventListener('click', () => {
-        if (confirm('Are you sure you want to sign out? Your cloud data will remain safe.')) {
-          handleLogout();
-        }
-      });
-    }
-
-    // Modal Auth Tab Buttons
-    const tabBtnLogin = document.getElementById('tab-btn-login');
-    if (tabBtnLogin) {
-      tabBtnLogin.addEventListener('click', () => switchAuthTab('login'));
-    }
-
-    const tabBtnRegister = document.getElementById('tab-btn-register');
-    if (tabBtnRegister) {
-      tabBtnRegister.addEventListener('click', () => switchAuthTab('register'));
-    }
-
-    const linkSwitchRegister = document.getElementById('link-switch-to-register');
-    if (linkSwitchRegister) {
-      linkSwitchRegister.addEventListener('click', (e) => {
-        e.preventDefault();
-        switchAuthTab('register');
-      });
-    }
-
-    const linkSwitchLogin = document.getElementById('link-switch-to-login');
-    if (linkSwitchLogin) {
-      linkSwitchLogin.addEventListener('click', (e) => {
-        e.preventDefault();
-        switchAuthTab('login');
-      });
-    }
-
-    // Password Visibility Toggles
-    document.querySelectorAll('.btn-toggle-pwd').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const targetId = btn.dataset.target;
-        const input = document.getElementById(targetId);
-        if (!input) return;
-        if (input.type === 'password') {
-          input.type = 'text';
-          btn.textContent = '🔒';
-        } else {
-          input.type = 'password';
-          btn.textContent = '👁️';
-        }
-      });
-    });
-
-    // Form: Sign In Submit
-    const formLogin = document.getElementById('form-login');
-    if (formLogin) {
-      formLogin.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const emailInput = document.getElementById('login-email');
-        const passwordInput = document.getElementById('login-password');
-        const submitBtn = document.getElementById('btn-submit-login');
-        if (emailInput && passwordInput) {
-          handleLogin(emailInput.value.trim(), passwordInput.value, submitBtn);
-        }
-      });
-    }
-
-    // Form: Register Submit
-    const formRegister = document.getElementById('form-register');
-    if (formRegister) {
-      formRegister.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const nameInput = document.getElementById('register-name');
-        const emailInput = document.getElementById('register-email');
-        const passwordInput = document.getElementById('register-password');
-        const submitBtn = document.getElementById('btn-submit-register');
-        if (nameInput && emailInput && passwordInput) {
-          handleRegister(nameInput.value.trim(), emailInput.value.trim(), passwordInput.value, submitBtn);
-        }
-      });
-    }
-
     setupSiriCopyButtons();
 
     // --- Authentication Event Handlers ---
@@ -1928,71 +1530,6 @@
       btnLogout.addEventListener('click', logoutUser);
     }
 
-    // Dedicated Auth Page Bindings
-    const btnOpenAuthPage = document.getElementById('btn-open-auth-page');
-    if (btnOpenAuthPage) {
-      btnOpenAuthPage.addEventListener('click', () => switchView('auth'));
-    }
-
-    const btnAuthBack = document.getElementById('btn-auth-back');
-    if (btnAuthBack) {
-      btnAuthBack.addEventListener('click', () => switchView('settings'));
-    }
-
-    const pageTabLogin = document.getElementById('auth-page-tab-login');
-    const pageTabSignup = document.getElementById('auth-page-tab-signup');
-    const pageCardLogin = document.getElementById('auth-page-card-login');
-    const pageCardSignup = document.getElementById('auth-page-card-signup');
-    const pageAuthError = document.getElementById('auth-page-error-msg');
-
-    if (pageTabLogin && pageTabSignup) {
-      pageTabLogin.addEventListener('click', () => {
-        pageTabLogin.classList.add('active');
-        pageTabSignup.classList.remove('active');
-        if (pageCardLogin) pageCardLogin.style.display = 'block';
-        if (pageCardSignup) pageCardSignup.style.display = 'none';
-        if (pageAuthError) pageAuthError.style.display = 'none';
-      });
-
-      pageTabSignup.addEventListener('click', () => {
-        pageTabSignup.classList.add('active');
-        pageTabLogin.classList.remove('active');
-        if (pageCardSignup) pageCardSignup.style.display = 'block';
-        if (pageCardLogin) pageCardLogin.style.display = 'none';
-        if (pageAuthError) pageAuthError.style.display = 'none';
-      });
-    }
-
-    const formPageLogin = document.getElementById('form-auth-page-login');
-    if (formPageLogin) {
-      formPageLogin.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const email = document.getElementById('page-login-email')?.value.trim();
-        const password = document.getElementById('page-login-password')?.value;
-        if (email && password) {
-          loginUser(email, password, 'page');
-        }
-      });
-    }
-
-    const formPageSignup = document.getElementById('form-auth-page-signup');
-    if (formPageSignup) {
-      formPageSignup.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const name = document.getElementById('page-signup-name')?.value.trim();
-        const email = document.getElementById('page-signup-email')?.value.trim();
-        const password = document.getElementById('page-signup-password')?.value;
-        if (name && email && password) {
-          registerUser(name, email, password, 'page');
-        }
-      });
-    }
-
-    const btnPageLogout = document.getElementById('btn-auth-page-logout');
-    if (btnPageLogout) {
-      btnPageLogout.addEventListener('click', logoutUser);
-    }
-
     // --- Connected Devices & Request Monitor Event Handlers ---
     const btnRefreshDevices = document.getElementById('btn-refresh-devices');
     if (btnRefreshDevices) {
@@ -2057,7 +1594,6 @@
 
   // --- App Initialization ---
   function init() {
-    updateAuthUI();
     updateGreeting();
     updateHydrationRings();
     renderTasks();
@@ -2067,9 +1603,6 @@
     ensureApiKey();
     registerServiceWorker();
 
-    // Verify existing user session with cloud
-    verifySession();
-
     // Instant sync with cloud on load so Siri & terminal tasks show up right away
     setTimeout(syncAllWithCloud, 200);
 
@@ -2078,23 +1611,6 @@
 
     // Health ping test on load
     setTimeout(testBackendPing, 800);
-
-    // Check initial route / hash for direct navigation (/login, /signup, /auth, /devices)
-    const path = (window.location.pathname || '').toLowerCase();
-    const hash = (window.location.hash || '').toLowerCase();
-    if (path.includes('login') || path.includes('signup') || path.includes('auth') || hash.includes('login') || hash.includes('signup') || hash.includes('auth')) {
-      setTimeout(() => {
-        switchView('auth');
-        if (path.includes('signup') || hash.includes('signup')) {
-          const signupTab = document.getElementById('auth-page-tab-signup');
-          if (signupTab) signupTab.click();
-        }
-      }, 50);
-    } else if (path.includes('device') || hash.includes('device')) {
-      setTimeout(() => switchView('devices'), 50);
-    } else if (path.includes('setup') || hash.includes('setup') || path.includes('siri') || hash.includes('siri')) {
-      setTimeout(() => switchView('siri'), 50);
-    }
   }
 
 

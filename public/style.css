@@ -950,232 +950,305 @@ nav.app-navbar {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* ==========================================================================
-   AUTHENTICATION UI (LOGIN & REGISTER)
-   ========================================================================== */
-.header-user-btn {
+/* User Auth Pill in Header */
+.user-auth-pill {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border-glass-light);
+  gap: 6px;
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.35);
   border-radius: 20px;
-  padding: 6px 12px;
-  color: var(--text-main);
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 500;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #E2E8F0;
   cursor: pointer;
   transition: all 0.2s ease;
-  backdrop-filter: blur(12px);
 }
 
-.header-user-btn:hover {
-  background: rgba(6, 182, 212, 0.12);
+.user-auth-pill:hover {
+  background: rgba(6, 182, 212, 0.22);
   border-color: var(--accent-cyan);
-  box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
 }
 
-.user-avatar-circle {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--grad-cyan-blue);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
+.user-avatar-dot {
+  font-size: 14px;
+}
+
+/* Auth Tabs in Modal */
+.auth-tabs {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  text-transform: uppercase;
-}
-
-.auth-sheet {
-  max-width: 440px;
-}
-
-.auth-header {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.auth-icon-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(6, 182, 212, 0.12);
-  border: 1px solid rgba(6, 182, 212, 0.3);
-  font-size: 22px;
-  margin-bottom: 12px;
-  box-shadow: var(--glow-cyan);
-}
-
-.auth-subtitle {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-top: 6px;
-  line-height: 1.5;
-}
-
-.auth-tab-switch {
-  display: flex;
-  background: rgba(12, 16, 26, 0.7);
-  border: 1px solid var(--border-glass);
-  border-radius: 12px;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.35);
   padding: 4px;
-  margin-bottom: 20px;
-  gap: 4px;
+  border-radius: 12px;
+  margin-bottom: 16px;
 }
 
 .auth-tab-btn {
   flex: 1;
-  background: transparent;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 8px;
   border: none;
-  border-radius: 9px;
-  padding: 10px;
-  font-family: var(--font-body);
+  background: transparent;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .auth-tab-btn.active {
-  background: var(--grad-cyan-blue);
-  color: #FFFFFF;
-  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.35);
+  background: var(--accent-cyan);
+  color: #07090E;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.35);
 }
 
-.auth-form {
-  display: none;
-  animation: fadeIn 0.25s ease;
+/* Connected Devices Cards */
+.device-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  backdrop-filter: blur(16px);
+  transition: all 0.2s ease;
 }
 
-.auth-form.active {
-  display: block;
+.device-card:hover {
+  border-color: rgba(6, 182, 212, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
-.password-input-wrapper {
-  position: relative;
+.device-card-header {
   display: flex;
-  align-items: center;
-}
-
-.password-input-wrapper .form-input {
-  padding-right: 44px;
-}
-
-.btn-toggle-pwd {
-  position: absolute;
-  right: 12px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.btn-toggle-pwd:hover {
-  opacity: 1;
-}
-
-.auth-submit-btn {
-  margin-top: 10px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.auth-switch-prompt {
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-top: 14px;
-}
-
-.auth-switch-prompt a {
-  color: var(--accent-cyan);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.auth-switch-prompt a:hover {
-  text-decoration: underline;
-}
-
-.account-profile-card {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.account-user-info {
-  display: flex;
   align-items: center;
-  gap: 14px;
+  margin-bottom: 8px;
 }
 
-.account-avatar-large {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--grad-cyan-blue);
+.device-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(6, 182, 212, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  font-weight: 700;
-  color: #fff;
-  box-shadow: var(--glow-cyan);
-  text-transform: uppercase;
 }
 
-.account-details-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-main);
+.device-details {
+  flex: 1;
+  margin-left: 12px;
 }
 
-.account-details-email {
-  font-size: 13px;
+.device-title {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.device-subtitle {
+  font-size: 12px;
   color: var(--text-muted);
   margin-top: 2px;
 }
 
-.account-sync-badge {
+.device-badge-active {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 10px;
   font-size: 11px;
-  color: #34D399;
   font-weight: 600;
-  margin-top: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.btn-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  display: inline-block;
+.device-badge-idle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(245, 158, 11, 0.15);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.btn-spinner.hidden {
-  display: none;
+.device-badge-current {
+  background: rgba(6, 182, 212, 0.2);
+  color: #38BDF8;
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-weight: 700;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.device-meta-row {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-sub);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  flex-wrap: wrap;
 }
+
+/* Request Inspector Stream */
+.request-feed-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: 18px;
+  padding: 16px;
+  backdrop-filter: blur(16px);
+  margin-bottom: 20px;
+}
+
+.request-feed-list {
+  max-height: 440px;
+  overflow-y: auto;
+  border-radius: 12px;
+  background: rgba(7, 9, 14, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 6px 0;
+}
+
+.request-row {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.15s ease;
+  font-size: 12px;
+}
+
+.request-row:last-child {
+  border-bottom: none;
+}
+
+.request-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.request-row.task-add-row {
+  border-left: 3px solid var(--accent-rose);
+  background: rgba(244, 63, 94, 0.04);
+}
+
+.request-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.method-tag {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.method-tag.GET {
+  background: rgba(6, 182, 212, 0.2);
+  color: #38BDF8;
+}
+
+.method-tag.POST {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34D399;
+}
+
+.method-tag.PATCH {
+  background: rgba(245, 158, 11, 0.2);
+  color: #FBBF24;
+}
+
+.method-tag.DELETE {
+  background: rgba(244, 63, 94, 0.2);
+  color: #FB7185;
+}
+
+.status-tag {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.status-tag.ok {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+}
+
+.status-tag.err {
+  background: rgba(244, 63, 94, 0.15);
+  color: #FB7185;
+}
+
+.request-path-text {
+  font-family: monospace;
+  font-size: 12px;
+  color: #FFFFFF;
+  word-break: break-all;
+  margin-bottom: 4px;
+}
+
+.request-meta-text {
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-sub);
+  flex-wrap: wrap;
+}
+
+.action-pill-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  color: #E2E8F0;
+}
+
+.action-pill-tag.task-warn {
+  background: rgba(244, 63, 94, 0.25);
+  color: #FDA4AF;
+}
+
+/* Diagnostic Alert Boxes */
+.diag-box {
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.diag-box-warning {
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #FECDD3;
+}
+
+.diag-box-success {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #A7F3D0;
+}
+
