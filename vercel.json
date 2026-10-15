@@ -11,19 +11,19 @@
     },
     {
       "source": "/login",
-      "destination": "/index.html"
+      "destination": "/login.html"
     },
     {
       "source": "/signup",
-      "destination": "/index.html"
+      "destination": "/login.html"
     },
     {
       "source": "/setup",
-      "destination": "/index.html"
+      "destination": "/setup.html"
     },
     {
       "source": "/auth",
-      "destination": "/index.html"
+      "destination": "/login.html"
     },
     {
       "source": "/devices",
@@ -31,8 +31,9 @@
     },
     {
       "source": "/siri",
-      "destination": "/index.html"
+      "destination": "/setup.html"
     }
   ]
 }
+
 
