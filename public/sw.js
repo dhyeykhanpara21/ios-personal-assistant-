@@ -1,4 +1,4 @@
-const CACHE_NAME = 'luphonix-pwa-v3';
+const CACHE_NAME = 'luphonix-pwa-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

@@ -27,6 +27,10 @@ backend/dev.db
 backend/dev.db-journal
 backend/dev.db-wal
 backend/dev.db-shm
+dev.db
+dev.db-journal
+dev.db-wal
+dev.db-shm
 .env.local
 
 .vercel

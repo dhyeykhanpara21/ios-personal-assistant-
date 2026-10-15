@@ -194,6 +194,48 @@ tasksApp.get('/complete', async (c) => {
   return c.text(successMsg);
 });
 
+// GET /api/tasks/toggle?id=<ID> or ?title=<title> (Instant completion toggle for Siri and Web UI)
+tasksApp.get('/toggle', async (c) => {
+  const userId = c.get('userId');
+  const queryParam = c.req.query('id') || c.req.query('title') || c.req.query('q');
+
+  if (!queryParam || !queryParam.trim()) {
+    return c.json({ success: false, error: 'Task ID or title required' }, 400);
+  }
+
+  const cleanQuery = queryParam.trim();
+  const findResult = await db.execute({
+    sql: `SELECT * FROM tasks
+          WHERE (user_id = ? OR user_id = 'user_siri_default')
+            AND (id = ? OR LOWER(title) LIKE ?)
+          ORDER BY CASE WHEN id = ? THEN 1 WHEN LOWER(title) = ? THEN 2 ELSE 3 END, created_at DESC
+          LIMIT 1`,
+    args: [userId, cleanQuery, `%${cleanQuery.toLowerCase()}%`, cleanQuery, cleanQuery.toLowerCase()],
+  });
+
+  if (findResult.rows.length === 0) {
+    return c.json({ success: false, error: 'Task not found' }, 404);
+  }
+
+  const row = findResult.rows[0];
+  const nextVal = row.is_completed ? 0 : 1;
+  const now = new Date().toISOString();
+
+  await db.execute({
+    sql: 'UPDATE tasks SET is_completed = ?, updated_at = ? WHERE id = ?',
+    args: [nextVal, now, row.id],
+  });
+
+  return c.json({
+    success: true,
+    data: {
+      ...row,
+      is_completed: Boolean(nextVal),
+      updated_at: now,
+    },
+  });
+});
+
 // GET /api/tasks/add (Hands-free task creation for Siri Shortcuts)
 tasksApp.get('/add', async (c) => {
   const userId = c.get('userId');
@@ -207,19 +249,76 @@ tasksApp.get('/add', async (c) => {
   const now = new Date().toISOString();
   const taskTitle = title.trim();
 
+  // Smart category detection if not explicitly passed
+  let category = (c.req.query('category') || '').toLowerCase();
+  if (!['personal', 'work', 'study', 'health', 'other'].includes(category)) {
+    const lower = taskTitle.toLowerCase();
+    if (
+      lower.includes('study') ||
+      lower.includes('read') ||
+      lower.includes('physics') ||
+      lower.includes('chemistry') ||
+      lower.includes('math') ||
+      lower.includes('exam') ||
+      lower.includes('homework') ||
+      lower.includes('quiz')
+    ) {
+      category = 'study';
+    } else if (
+      lower.includes('water') ||
+      lower.includes('drink') ||
+      lower.includes('gym') ||
+      lower.includes('workout') ||
+      lower.includes('walk') ||
+      lower.includes('meditat') ||
+      lower.includes('sleep') ||
+      lower.includes('health')
+    ) {
+      category = 'health';
+    } else if (
+      lower.includes('call') ||
+      lower.includes('buy') ||
+      lower.includes('grocer') ||
+      lower.includes('mom') ||
+      lower.includes('dad') ||
+      lower.includes('family') ||
+      lower.includes('clean') ||
+      lower.includes('car')
+    ) {
+      category = 'personal';
+    } else {
+      category = 'work';
+    }
+  }
+
+  const priorityParam = (c.req.query('priority') || '').toLowerCase();
+  const priority = ['low', 'medium', 'high'].includes(priorityParam) ? priorityParam : 'medium';
+
   await db.execute({
     sql: `INSERT INTO tasks (
       id, user_id, title, description, due_at, priority, category,
       is_completed, recurrence_rule, created_at, updated_at
-    ) VALUES (?, ?, ?, NULL, ?, 'medium', 'work', 0, NULL, ?, ?)`,
-    args: [id, userId, taskTitle, now, now, now],
+    ) VALUES (?, ?, ?, NULL, ?, ?, ?, 0, NULL, ?, ?)`,
+    args: [id, userId, taskTitle, now, priority, category, now, now],
   });
 
   const msg = `Added "${taskTitle}" to your Luphonix tasks.`;
   const format = c.req.query('format')?.toLowerCase();
   const accept = c.req.header('accept')?.toLowerCase() || '';
   if (format === 'json' || accept.includes('application/json')) {
-    return c.json({ success: true, message: msg, data: { id, title: taskTitle } }, 201);
+    return c.json({
+      success: true,
+      message: msg,
+      data: {
+        id,
+        user_id: userId,
+        title: taskTitle,
+        priority,
+        category,
+        is_completed: false,
+        created_at: now,
+      },
+    }, 201);
   }
   return c.text(msg);
 });
@@ -227,7 +326,27 @@ tasksApp.get('/add', async (c) => {
 // POST /api/tasks (Create or Upsert)
 tasksApp.post('/', async (c) => {
   const userId = c.get('userId');
-  const body = await c.req.json();
+  let body: any = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    try {
+      body = await c.req.parseBody();
+    } catch {
+      body = {};
+    }
+  }
+
+  if (!body || Object.keys(body).length === 0) {
+    body = {
+      id: c.req.query('id'),
+      title: c.req.query('title') || c.req.query('text'),
+      priority: c.req.query('priority') || 'medium',
+      category: c.req.query('category') || 'work',
+      is_completed: c.req.query('is_completed') === 'true' || c.req.query('is_completed') === '1',
+    };
+  }
+
   const parsed = taskInputSchema.safeParse(body);
 
   if (!parsed.success) {
@@ -325,7 +444,33 @@ tasksApp.get('/:id', async (c) => {
 tasksApp.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const id = c.req.param('id');
-  const body = await c.req.json();
+  let body: any = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    try {
+      body = await c.req.parseBody();
+    } catch {
+      body = {};
+    }
+  }
+
+  // Fallback to query params if body was empty or not parseable
+  if (!body || Object.keys(body).length === 0) {
+    body = {};
+    if (c.req.query('is_completed') !== undefined) {
+      body.is_completed = c.req.query('is_completed') === 'true' || c.req.query('is_completed') === '1';
+    }
+    if (c.req.query('title')) {
+      body.title = c.req.query('title');
+    }
+    if (c.req.query('priority')) {
+      body.priority = c.req.query('priority');
+    }
+    if (c.req.query('category')) {
+      body.category = c.req.query('category');
+    }
+  }
 
   const updateSchema = taskInputSchema.partial();
   const parsed = updateSchema.safeParse(body);

@@ -20,6 +20,7 @@
     { id: '3', title: 'Sync tasks with iPhone Siri shortcuts', category: 'study', priority: 'high', is_completed: false, created_at: new Date().toISOString() },
     { id: '4', title: 'Evening meditation or 20-min brisk walk', category: 'personal', priority: 'low', is_completed: false, created_at: new Date().toISOString() }
   ];
+  const SAMPLE_TASK_IDS = new Set(['1', '2', '3', '4']);
 
   const DEFAULT_WATER = [
     { id: 'w1', amount_ml: 250, timestamp: new Date(Date.now() - 4 * 3600000).toISOString() },
@@ -33,10 +34,20 @@
 
   const DEFAULT_PREFS = {
     dailyWaterGoal: 2000,
-    backendUrl: window.location.origin,
+    backendUrl: (window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:') && !window.location.origin.includes(':5500')) ? window.location.origin : 'https://luphonix-web.vercel.app',
     audioEnabled: true,
     activeStreak: 3
   };
+
+  function getBackendBaseUrl() {
+    let url = state.prefs && state.prefs.backendUrl ? state.prefs.backendUrl.trim() : '';
+    if (!url || url === 'null' || url.startsWith('file:') || url.includes(':5500') || url.includes(':8080')) {
+      url = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:') && !window.location.origin.includes(':5500') && !window.location.origin.includes(':8080'))
+        ? window.location.origin
+        : 'https://luphonix-web.vercel.app';
+    }
+    return url.replace(/\/$/, '');
+  }
 
   // State object
   const state = {
@@ -380,29 +391,35 @@
     renderTasks();
     showToast(task.is_completed ? 'Task completed! 🎉' : 'Task marked pending', 'success');
 
-    syncTaskToCloud(task);
+    syncTaskToggleToCloud(task);
   }
 
   async function deleteTaskFromCloud(id) {
-    const base = state.prefs.backendUrl || window.location.origin;
+    if (SAMPLE_TASK_IDS.has(id)) return;
+    const base = getBackendBaseUrl();
     try {
       let key = await ensureApiKey();
-      let res = await fetch(`${base}/api/tasks/${id}`, {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      let res = await fetch(`${base}/api/tasks/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${key}`,
           'Accept': 'application/json'
-        }
-      });
-      if (res.status === 401) {
+        },
+        signal: controller.signal
+      }).catch(() => null);
+      clearTimeout(timer);
+
+      if (res && res.status === 401) {
         key = await ensureApiKey(true);
-        await fetch(`${base}/api/tasks/${id}`, {
+        await fetch(`${base}/api/tasks/${encodeURIComponent(id)}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${key}`,
             'Accept': 'application/json'
           }
-        });
+        }).catch(() => {});
       }
     } catch (e) {
       console.warn('Offline delete fallback:', e);
@@ -539,7 +556,7 @@
   }
 
   async function ensureApiKey(forceRefresh = false) {
-    const base = state.prefs.backendUrl || window.location.origin;
+    const base = getBackendBaseUrl();
     if (!forceRefresh && currentApiKey && currentApiKey !== 'luphonix-siri-master-key') {
       updateApiKeyUI(currentApiKey);
       return currentApiKey;
@@ -569,7 +586,7 @@
   }
 
   async function syncWaterToCloud(log) {
-    const base = state.prefs.backendUrl || window.location.origin;
+    const base = getBackendBaseUrl();
     try {
       let key = await ensureApiKey();
       let res = await fetch(`${base}/api/hydration`, {
@@ -598,46 +615,60 @@
     }
   }
 
-  async function syncTaskToCloud(task) {
-    const base = state.prefs.backendUrl || window.location.origin;
+  async function syncTaskToggleToCloud(task) {
+    if (SAMPLE_TASK_IDS.has(task.id)) return;
+    const base = getBackendBaseUrl();
     try {
-      let key = await ensureApiKey();
+      const key = await ensureApiKey();
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
 
-      // 1. Try fast PATCH first
-      let patchRes = await fetch(`${base}/api/tasks/${encodeURIComponent(task.id)}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${key}`
-        },
-        body: JSON.stringify({
-          title: task.title,
-          is_completed: Boolean(task.is_completed)
-        })
-      });
+      // Fast toggle via GET /api/tasks/toggle?id=... (works unconditionally without body hang)
+      const res = await fetch(`${base}/api/tasks/toggle?id=${encodeURIComponent(task.id)}&apiKey=${encodeURIComponent(key)}`, {
+        signal: controller.signal
+      }).catch(() => null);
+      clearTimeout(timer);
 
-      if (patchRes.status === 401) {
-        key = await ensureApiKey(true);
-        patchRes = await fetch(`${base}/api/tasks/${encodeURIComponent(task.id)}`, {
+      if (!res || !res.ok) {
+        // Fallback to query param on PATCH
+        await fetch(`${base}/api/tasks/${encodeURIComponent(task.id)}?is_completed=${task.is_completed}&apiKey=${encodeURIComponent(key)}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
             'Authorization': `Bearer ${key}`
           },
-          body: JSON.stringify({
-            title: task.title,
-            is_completed: Boolean(task.is_completed)
-          })
-        });
+          body: JSON.stringify({ is_completed: Boolean(task.is_completed) })
+        }).catch(() => {});
       }
+    } catch (e) {
+      console.warn('Task toggle sync fallback:', e);
+    }
+  }
 
-      if (patchRes.ok) {
+  async function syncTaskToCloud(task) {
+    if (SAMPLE_TASK_IDS.has(task.id)) return;
+    const base = getBackendBaseUrl();
+    try {
+      let key = await ensureApiKey();
+
+      // 1. Hands-free fast GET /api/tasks/add with format=json
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const url = `${base}/api/tasks/add?title=${encodeURIComponent(task.title)}&category=${encodeURIComponent(task.category || 'work')}&priority=${encodeURIComponent(task.priority || 'medium')}&apiKey=${encodeURIComponent(key)}&format=json`;
+
+      const res = await fetch(url, { signal: controller.signal }).catch(() => null);
+      clearTimeout(timer);
+
+      if (res && res.ok) {
+        const body = await res.json().catch(() => null);
+        if (body && body.data && body.data.id) {
+          task.id = body.data.id;
+          saveStorage(STORAGE_KEY_TASKS, state.tasks);
+        }
         return;
       }
 
-      // 2. If PATCH fails (e.g. 404 task not on server yet), upsert via POST /api/tasks
+      // 2. Fallback to POST /api/tasks
       const payload = {
         id: task.id,
         title: task.title,
@@ -646,82 +677,78 @@
         is_completed: Boolean(task.is_completed),
         due_at: task.due_at || new Date().toISOString()
       };
-      let res = await fetch(`${base}/api/tasks`, {
+      await fetch(`${base}/api/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
           'Authorization': `Bearer ${key}`
         },
         body: JSON.stringify(payload)
-      });
-      if (res.status === 401) {
-        key = await ensureApiKey(true);
-        res = await fetch(`${base}/api/tasks`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${key}`
-          },
-          body: JSON.stringify(payload)
-        });
-      }
-      if (!res.ok) {
-        console.warn('Task sync non-200:', res.status, await res.text());
-      }
+      }).catch(() => {});
     } catch (e) {
       console.warn('Offline task fallback:', e);
     }
   }
 
   async function syncAllWithCloud(showToastFeedback = false) {
-    const base = state.prefs.backendUrl || window.location.origin;
+    const base = getBackendBaseUrl();
     try {
       let key = await ensureApiKey();
 
-      // Push local tasks up first
-      if (Array.isArray(state.tasks) && state.tasks.length > 0) {
-        for (const t of state.tasks) {
-          await syncTaskToCloud(t);
-        }
-      }
-
-      // Pull cloud tasks down
+      // 1. Pull cloud tasks down FIRST so UI immediately reflects cloud state
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
       let res = await fetch(`${base}/api/tasks?filter=all`, {
         headers: {
           'Authorization': `Bearer ${key}`,
           'Accept': 'application/json'
-        }
+        },
+        signal: controller.signal
+      }).catch(e => {
+        console.warn('Cloud tasks fetch network error:', e);
+        return null;
       });
-      if (res.status === 401) {
+      clearTimeout(timeoutId);
+
+      if (res && res.status === 401) {
         key = await ensureApiKey(true);
         res = await fetch(`${base}/api/tasks?filter=all`, {
           headers: {
             'Authorization': `Bearer ${key}`,
             'Accept': 'application/json'
           }
-        });
+        }).catch(() => null);
       }
-      if (res.ok) {
-        const body = await res.json();
+
+      if (res && res.ok) {
+        const body = await res.json().catch(() => null);
         if (body && Array.isArray(body.data)) {
-          // Merge local and cloud preserving local tasks
-          const taskMap = new Map();
-          (state.tasks || []).forEach(t => taskMap.set(t.id, t));
-          body.data.forEach(t => {
-            taskMap.set(t.id, {
-              ...t,
-              is_completed: Boolean(t.is_completed)
-            });
-          });
-          state.tasks = Array.from(taskMap.values());
+          const cloudTasks = body.data.map(t => ({
+            ...t,
+            is_completed: Boolean(t.is_completed)
+          }));
+
+          // When cloud returns real data, dismiss sample placeholder tasks!
+          // Only keep genuine local tasks (created offline with UUID) that aren't on server yet
+          const cloudIds = new Set(cloudTasks.map(t => t.id));
+          const unsyncedLocal = (state.tasks || []).filter(
+            t => !SAMPLE_TASK_IDS.has(t.id) && !cloudIds.has(t.id)
+          );
+
+          state.tasks = [...cloudTasks, ...unsyncedLocal];
           saveStorage(STORAGE_KEY_TASKS, state.tasks);
           renderTasks();
+          updateConnectionStatus(true);
           if (showToastFeedback) {
             showToast(`Synced ${state.tasks.length} tasks with Siri Cloud! ☁️`, 'success');
           }
         }
+      }
+
+      // 2. Sync any unsynced genuine local tasks in the background without blocking UI
+      const pendingPush = (state.tasks || []).filter(t => !SAMPLE_TASK_IDS.has(t.id));
+      for (const t of pendingPush) {
+        syncTaskToCloud(t).catch(() => {});
       }
     } catch (e) {
       console.warn('Cloud sync error:', e);
@@ -1081,6 +1108,31 @@
       });
     }
 
+    // Click on status pill to manually refresh from cloud
+    const pill = document.getElementById('connection-pill');
+    if (pill) {
+      pill.style.cursor = 'pointer';
+      pill.title = 'Click to sync with Siri Cloud';
+      pill.addEventListener('click', () => {
+        showToast('Syncing with Siri Cloud... ☁️', 'info');
+        syncAllWithCloud(true);
+      });
+    }
+
+    // Auto-sync whenever tab becomes visible (e.g. after adding task via Siri or terminal)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        syncAllWithCloud();
+      }
+    });
+
+    // Background interval sync every 15 seconds
+    setInterval(() => {
+      if (navigator.onLine && document.visibilityState === 'visible') {
+        syncAllWithCloud();
+      }
+    }, 15000);
+
     setupSiriCopyButtons();
   }
 
@@ -1106,8 +1158,8 @@
     ensureApiKey();
     registerServiceWorker();
 
-    // Auto-sync existing local tasks with cloud for Siri
-    setTimeout(syncAllWithCloud, 500);
+    // Instant sync with cloud on load so Siri & terminal tasks show up right away
+    setTimeout(syncAllWithCloud, 200);
 
     // Health ping test on load
     setTimeout(testBackendPing, 800);
