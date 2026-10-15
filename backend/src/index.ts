@@ -11,6 +11,8 @@ import remindersApp from './routes/reminders.js';
 import hydrationApp from './routes/hydration.js';
 import preferencesApp from './routes/preferences.js';
 import syncApp from './routes/sync.js';
+import devicesApp from './routes/devices.js';
+import { requestTrackerMiddleware } from './middleware/requestTracker.js';
 
 const app = new Hono();
 
@@ -24,6 +26,7 @@ app.use(
     allowHeaders: ['Content-Type', 'Authorization'],
   })
 );
+app.use('*', requestTrackerMiddleware);
 
 // Health check endpoint with database diagnostics
 app.get('/health', async (c) => {
@@ -54,6 +57,7 @@ app.route('/api/reminders', remindersApp);
 app.route('/api/hydration', hydrationApp);
 app.route('/api/preferences', preferencesApp);
 app.route('/api/sync', syncApp);
+app.route('/api/devices', devicesApp);
 
 // Central Error Handler
 app.onError(errorHandler);
@@ -63,6 +67,12 @@ import { getPwaHtml } from './pwaHtml.js';
 // Root fallback to PWA HTML directly
 app.get('/', (c) => c.html(getPwaHtml()));
 app.get('/index.html', (c) => c.html(getPwaHtml()));
+app.get('/login', (c) => c.html(getPwaHtml()));
+app.get('/signup', (c) => c.html(getPwaHtml()));
+app.get('/auth', (c) => c.html(getPwaHtml()));
+app.get('/setup', (c) => c.html(getPwaHtml()));
+app.get('/devices', (c) => c.html(getPwaHtml()));
+app.get('/siri', (c) => c.html(getPwaHtml()));
 
 // Serve PWA Static Frontend
 app.use('/*', serveStatic({ root: './public' }));

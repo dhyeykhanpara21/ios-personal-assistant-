@@ -27,6 +27,10 @@
         <h1 class="brand-title">Luphonix</h1>
       </div>
       <div class="header-actions">
+        <div class="user-auth-pill" id="user-auth-pill" title="Account / Sign In">
+          <span class="user-avatar-dot" id="user-avatar-icon">👤</span>
+          <span id="user-display-name">Sign In</span>
+        </div>
         <div class="status-pill" id="connection-pill">
           <span class="status-dot"></span>
           <span id="connection-text">Cloud Sync</span>
@@ -311,7 +315,87 @@
         </div>
       </section>
 
-      <!-- ================= VIEW 6: SETTINGS ================= -->
+      <!-- ================= VIEW 6: CONNECTED DEVICES & REQUEST MONITOR ================= -->
+      <section class="view-section" id="view-devices">
+        <div class="section-header" style="margin-top: 0;">
+          <h2 class="section-title">Connected Devices</h2>
+          <button class="header-icon-btn" id="btn-refresh-devices" style="width: 32px; height: 32px;" title="Refresh Devices & Requests">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          </button>
+        </div>
+
+        <!-- Quick Stats Overview -->
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-val" style="color: #10B981;" id="stat-devices-online">1</div>
+            <div class="stat-label">Online Devices</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val" style="color: #06B6D4;" id="stat-requests-total">0</div>
+            <div class="stat-label">Requests Logged</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val" style="color: #F59E0B;" id="stat-db-tasks-count">--</div>
+            <div class="stat-label">Tasks in DB</div>
+          </div>
+        </div>
+
+        <!-- Active Connected Devices List -->
+        <div class="section-header">
+          <h3 class="section-title" style="font-size: 15px;">📱 Active Device Sessions</h3>
+          <span class="section-link" id="btn-ping-device" style="font-size: 12px; cursor: pointer;">⚡ Ping Device</span>
+        </div>
+        <div id="devices-list-container">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Client Request Inspector -->
+        <div class="section-header" style="margin-top: 24px;">
+          <h3 class="section-title" style="font-size: 15px;">🔍 Live Client Request Inspector</h3>
+          <span style="font-size: 11px; color: var(--accent-emerald); font-weight: 600;">● Live Stream</span>
+        </div>
+
+        <!-- Diagnostic Alert Banner -->
+        <div class="diag-box diag-box-success" id="diag-banner-box">
+          <span style="font-size: 18px;">🛡️</span>
+          <div>
+            <div style="font-weight: 700; margin-bottom: 2px;">Continuous Task Addition Loop: Neutralized &amp; Guarded</div>
+            <p style="font-size: 12px; opacity: 0.9;">
+              <strong>Cause Identified:</strong> Client background sync was inadvertently re-pushing synced tasks back to <code>/api/tasks/add</code> every 15s.
+              The client sync loop has been fixed. Use the button below to purge all leftover duplicate tasks from your database!
+            </p>
+          </div>
+        </div>
+
+        <div class="request-feed-card">
+          <!-- Action Buttons Bar -->
+          <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+            <button class="btn-primary" id="btn-deduplicate-tasks" style="padding: 8px 12px; font-size: 12px; width: auto; background: linear-gradient(135deg, #10B981 0%, #059669 100%);">
+              🧹 Clean Duplicate Tasks in DB
+            </button>
+            <button class="btn-secondary" id="btn-clear-request-logs" style="padding: 8px 12px; font-size: 12px; width: auto;">
+              🗑️ Clear Feed
+            </button>
+          </div>
+
+          <!-- Filter Pills for Requests -->
+          <div class="filter-pills-bar" style="margin-bottom: 12px;" id="request-filter-bar">
+            <button class="filter-pill active" data-req-filter="all">All Traffic</button>
+            <button class="filter-pill" data-req-filter="tasks_add" style="border-color: rgba(244, 63, 94, 0.4); color: #FDA4AF;">Task Additions ⚠️</button>
+            <button class="filter-pill" data-req-filter="sync">Sync &amp; Read 📋</button>
+            <button class="filter-pill" data-req-filter="auth">Auth 🔑</button>
+          </div>
+
+          <!-- Live Feed Container -->
+          <div class="request-feed-list" id="requests-feed-container">
+            <div style="text-align: center; padding: 30px 10px; color: var(--text-sub);">
+              Listening for incoming client requests...
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= VIEW 7: SETTINGS ================= -->
       <section class="view-section" id="view-settings">
         <div class="section-header" style="margin-top: 0;">
           <h2 class="section-title">Settings & Cloud</h2>
@@ -418,6 +502,24 @@
           </button>
         </div>
 
+        <!-- Account Profile Card in Settings -->
+        <div class="glass-card" style="border-color: rgba(6, 182, 212, 0.35); background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="font-family: var(--font-heading); font-size: 16px; font-weight: 700; color: #38BDF8;">
+              👤 Account &amp; Cloud Profile
+            </h3>
+            <span class="ring-percentage-pill" id="settings-auth-status-pill" style="font-size: 10px; background: rgba(6, 182, 212, 0.2); color: #38BDF8;">Guest</span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
+            Sign in with your email to sync tasks, hydration, and Siri shortcuts seamlessly across all your devices.
+          </p>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-primary" id="btn-open-auth-page" style="padding: 10px; font-size: 13px;">
+              🔑 Open Account Sign In / Sign Up
+            </button>
+          </div>
+        </div>
+
         <!-- Data Reset -->
         <div class="glass-card" style="border-color: rgba(244, 63, 94, 0.2);">
           <h3 style="font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: var(--accent-rose); margin-bottom: 8px;">
@@ -429,6 +531,104 @@
           <button class="btn-secondary" id="btn-reset-data" style="color: var(--accent-rose); border-color: rgba(244, 63, 94, 0.3);">
             Reset All Local Data
           </button>
+        </div>
+      </section>
+
+      <!-- ================= VIEW 8: ACCOUNT SIGN IN & SIGN UP PAGE ================= -->
+      <section class="view-section" id="view-auth">
+        <div class="section-header" style="margin-top: 0;">
+          <h2 class="section-title">Account Access</h2>
+          <button class="header-icon-btn" id="btn-auth-back" style="width: 32px; height: 32px;" title="Go Back">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+        </div>
+
+        <!-- Auth Hero Card -->
+        <div class="glass-card" style="text-align: center; padding: 24px 16px; margin-bottom: 18px; background: linear-gradient(180deg, rgba(6, 182, 212, 0.12) 0%, rgba(14, 19, 31, 0.8) 100%);">
+          <div style="width: 56px; height: 56px; border-radius: 16px; background: var(--grad-cyan-blue); display: inline-flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: var(--glow-cyan); margin-bottom: 12px;">
+            ⚡
+          </div>
+          <h3 style="font-family: var(--font-heading); font-size: 20px; font-weight: 700;">Luphonix Cloud Sync</h3>
+          <p style="font-size: 13px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">
+            One account for your <strong>iPhone 16 Pro</strong>, <strong>Mac / PC</strong>, and hands-free <strong>Siri shortcuts</strong>.
+          </p>
+        </div>
+
+        <!-- Authenticated State Card (Shown when logged in) -->
+        <div id="auth-page-logged-in" style="display: none;">
+          <div class="glass-card" style="border-color: rgba(16, 185, 129, 0.35); background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%); margin-bottom: 16px;">
+            <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 12px;">
+              <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--grad-cyan-blue); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #07090E;" id="auth-page-avatar">
+                U
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 18px;" id="auth-page-name">User</div>
+                <div style="font-size: 13px; color: var(--text-muted);" id="auth-page-email">user@luphonix.local</div>
+                <span class="ring-percentage-pill" style="font-size: 10px; background: rgba(16, 185, 129, 0.2); color: #34D399; margin-top: 4px; display: inline-block;">● Active Session</span>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: var(--text-sub); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              User ID: <code id="auth-page-uid" style="color: #38BDF8;">...</code>
+            </div>
+          </div>
+          <button type="button" class="btn-secondary" id="btn-auth-page-logout" style="color: var(--accent-rose); border-color: rgba(244, 63, 94, 0.4); margin-bottom: 12px;">
+            Sign Out of Account
+          </button>
+        </div>
+
+        <!-- Unauthenticated Forms Container -->
+        <div id="auth-page-forms">
+          <!-- Auth Page Tabs -->
+          <div class="auth-tabs" style="margin-bottom: 18px;">
+            <button type="button" class="auth-tab-btn active" id="auth-page-tab-login">Sign In</button>
+            <button type="button" class="auth-tab-btn" id="auth-page-tab-signup">Create Account</button>
+          </div>
+
+          <div id="auth-page-error-msg" style="display: none; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); color: #FDA4AF; padding: 10px 14px; border-radius: 12px; font-size: 13px; margin-bottom: 14px;"></div>
+
+          <!-- Page Form: Sign In -->
+          <div class="glass-card" id="auth-page-card-login">
+            <h3 style="font-family: var(--font-heading); font-size: 17px; font-weight: 700; margin-bottom: 14px;">
+              Sign In to Your Account
+            </h3>
+            <form id="form-auth-page-login">
+              <div class="form-group">
+                <label class="form-label" for="page-login-email">Email Address</label>
+                <input type="email" class="form-input" id="page-login-email" placeholder="you@example.com" required autocomplete="email">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="page-login-password">Password</label>
+                <input type="password" class="form-input" id="page-login-password" placeholder="••••••••" required autocomplete="current-password">
+              </div>
+              <button type="submit" class="btn-primary" id="btn-submit-page-login" style="padding: 13px; font-size: 14px;">
+                Sign In
+              </button>
+            </form>
+          </div>
+
+          <!-- Page Form: Create Account -->
+          <div class="glass-card" id="auth-page-card-signup" style="display: none;">
+            <h3 style="font-family: var(--font-heading); font-size: 17px; font-weight: 700; margin-bottom: 14px;">
+              Create Luphonix Account
+            </h3>
+            <form id="form-auth-page-signup">
+              <div class="form-group">
+                <label class="form-label" for="page-signup-name">Full Name</label>
+                <input type="text" class="form-input" id="page-signup-name" placeholder="Dhyey Khanpara" required autocomplete="name">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="page-signup-email">Email Address</label>
+                <input type="email" class="form-input" id="page-signup-email" placeholder="you@example.com" required autocomplete="email">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="page-signup-password">Password (min 6 characters)</label>
+                <input type="password" class="form-input" id="page-signup-password" minlength="6" placeholder="••••••••" required autocomplete="new-password">
+              </div>
+              <button type="submit" class="btn-primary" id="btn-submit-page-signup" style="padding: 13px; font-size: 14px;">
+                Create Account
+              </button>
+            </form>
+          </div>
         </div>
       </section>
 
@@ -474,6 +674,14 @@
           <line x1="12" y1="19" x2="12" y2="22"></line>
         </svg>
         <span>Siri</span>
+      </button>
+
+      <button class="nav-item" data-view="devices" id="nav-btn-devices">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2" stroke="currentColor" stroke-width="2"></rect>
+          <line x1="12" y1="18" x2="12.01" y2="18" stroke="currentColor" stroke-width="2.5"></line>
+        </svg>
+        <span>Devices</span>
       </button>
 
       <button class="nav-item" data-view="settings" id="nav-btn-settings">
@@ -589,7 +797,77 @@
             ✅ Zero Developer Mode, zero reboot, zero cables! Opens full-screen with native haptics.
           </p>
         </div>
-        <button type="button" class="btn-primary modal-close-btn">Got It!</button>
+    <!-- Modal 5: Authentication (Sign In & Sign Up) -->
+    <div class="modal-overlay" id="modal-auth">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <h3 class="modal-title" id="auth-modal-title">Account Access</h3>
+        
+        <!-- Auth Tabs -->
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab-btn active" id="tab-btn-login">Sign In</button>
+          <button type="button" class="auth-tab-btn" id="tab-btn-signup">Create Account</button>
+        </div>
+
+        <div id="auth-error-msg" style="display: none; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); color: #FDA4AF; padding: 8px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 12px;"></div>
+
+        <!-- Form: Sign In -->
+        <form id="form-auth-login">
+          <div class="form-group">
+            <label class="form-label" for="login-email">Email Address</label>
+            <input type="email" class="form-input" id="login-email" placeholder="you@example.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="login-password">Password</label>
+            <input type="password" class="form-input" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-primary" id="btn-submit-login">Sign In to Luphonix</button>
+          <button type="button" class="btn-secondary modal-close-btn" style="margin-top: 8px;">Cancel</button>
+        </form>
+
+        <!-- Form: Create Account -->
+        <form id="form-auth-signup" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" for="signup-name">Your Full Name</label>
+            <input type="text" class="form-input" id="signup-name" placeholder="Dhyey Khanpara" required autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="signup-email">Email Address</label>
+            <input type="email" class="form-input" id="signup-email" placeholder="you@example.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="signup-password">Password (min 6 characters)</label>
+            <input type="password" class="form-input" id="signup-password" minlength="6" placeholder="••••••••" required autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn-primary" id="btn-submit-signup">Create My Account</button>
+          <button type="button" class="btn-secondary modal-close-btn" style="margin-top: 8px;">Cancel</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 6: User Profile & Session -->
+    <div class="modal-overlay" id="modal-account">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <h3 class="modal-title">My Account</h3>
+        <div class="glass-card" style="margin-bottom: 16px;">
+          <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: var(--grad-cyan-blue); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #07090E;" id="account-avatar-char">
+              U
+            </div>
+            <div>
+              <div style="font-weight: 700; font-size: 16px;" id="account-name-val">Luphonix User</div>
+              <div style="font-size: 12px; color: var(--text-muted);" id="account-email-val">user@luphonix.local</div>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-sub); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            User ID: <span id="account-id-val" style="font-family: monospace; color: var(--text-muted);">default</span>
+          </div>
+        </div>
+        <button type="button" class="btn-secondary" id="btn-logout" style="color: var(--accent-rose); border-color: rgba(244, 63, 94, 0.4); margin-bottom: 8px;">
+          Sign Out of Account
+        </button>
+        <button type="button" class="btn-secondary modal-close-btn">Close</button>
       </div>
     </div>
 
