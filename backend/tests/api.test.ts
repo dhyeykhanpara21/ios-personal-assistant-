@@ -286,12 +286,13 @@ describe('Luphonix Backend API Test Suite', async () => {
     const keyRes = await app.request('/api/auth/webhook-key');
     const { apiKey } = await keyRes.json();
 
+    const uniqueTitle = `Study Swift Intents ${Date.now()}`;
     // 1. Create a task for Siri
-    const addRes = await app.request(`/api/tasks/add?title=Study%20Swift%20Intents&apiKey=${encodeURIComponent(apiKey)}`);
+    const addRes = await app.request(`/api/tasks/add?title=${encodeURIComponent(uniqueTitle)}&apiKey=${encodeURIComponent(apiKey)}`);
     assert.strictEqual(addRes.status, 200);
 
     // 2. Complete the task using Siri phrase
-    const compRes = await app.request(`/api/tasks/complete?title=study&apiKey=${encodeURIComponent(apiKey)}`);
+    const compRes = await app.request(`/api/tasks/complete?title=${encodeURIComponent(uniqueTitle)}&apiKey=${encodeURIComponent(apiKey)}`);
     assert.strictEqual(compRes.status, 200);
     const text = await compRes.text();
     assert.ok(text.includes('Marked'));
@@ -301,7 +302,21 @@ describe('Luphonix Backend API Test Suite', async () => {
     const siriQueryRes = await app.request(`/api/tasks?filter=today&format=text&apiKey=${encodeURIComponent(apiKey)}`);
     assert.strictEqual(siriQueryRes.status, 200);
     const remainingText = await siriQueryRes.text();
-    assert.ok(!remainingText.includes('Study Swift Intents'), 'Completed task should not appear in Siri today tasks');
+    assert.ok(!remainingText.includes(uniqueTitle), 'Completed task should not appear in Siri today tasks');
+  });
+
+  it('19. GET /api/devices should list connected devices and requests feed', async () => {
+    const devRes = await app.request('/api/devices');
+    assert.strictEqual(devRes.status, 200);
+    const devBody = await devRes.json();
+    assert.strictEqual(devBody.success, true);
+    assert.ok(Array.isArray(devBody.devices));
+
+    const reqRes = await app.request('/api/devices/requests');
+    assert.strictEqual(reqRes.status, 200);
+    const reqBody = await reqRes.json();
+    assert.strictEqual(reqBody.success, true);
+    assert.ok(Array.isArray(reqBody.requests));
   });
 });
 

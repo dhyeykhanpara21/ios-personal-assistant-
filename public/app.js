@@ -12,6 +12,8 @@
   const STORAGE_KEY_REMINDERS = 'luphonix_reminders_v1';
   const STORAGE_KEY_PREFS = 'luphonix_preferences_v1';
   const STORAGE_KEY_API_KEY = 'luphonix_api_key_v1';
+  const STORAGE_KEY_AUTH_TOKEN = 'luphonix_auth_token_v1';
+  const STORAGE_KEY_AUTH_USER = 'luphonix_auth_user_v1';
 
   // Default sample data for instant wow effect on first open
   const DEFAULT_TASKS = [
@@ -55,10 +57,14 @@
     waterLogs: loadStorage(STORAGE_KEY_WATER, DEFAULT_WATER),
     reminders: loadStorage(STORAGE_KEY_REMINDERS, DEFAULT_REMINDERS),
     prefs: loadStorage(STORAGE_KEY_PREFS, DEFAULT_PREFS),
+    token: loadStorage(STORAGE_KEY_AUTH_TOKEN, null),
+    user: loadStorage(STORAGE_KEY_AUTH_USER, null),
     currentFilter: 'all',
+    currentReqFilter: 'all',
     searchQuery: '',
     activeView: 'dashboard',
-    isOnline: navigator.onLine
+    isOnline: navigator.onLine,
+    devicePollTimer: null
   };
 
   function loadStorage(key, fallback) {
@@ -443,7 +449,8 @@
       priority: priority || 'medium',
       is_completed: false,
       due_at: new Date().toISOString(),
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      _needsCloudSync: true
     };
     state.tasks.unshift(newTask);
     saveStorage(STORAGE_KEY_TASKS, state.tasks);
@@ -557,6 +564,10 @@
 
   async function ensureApiKey(forceRefresh = false) {
     const base = getBackendBaseUrl();
+    if (state.token) {
+      updateApiKeyUI(state.token);
+      return state.token;
+    }
     if (!forceRefresh && currentApiKey && currentApiKey !== 'luphonix-siri-master-key') {
       updateApiKeyUI(currentApiKey);
       return currentApiKey;
@@ -651,24 +662,7 @@
     try {
       let key = await ensureApiKey();
 
-      // 1. Hands-free fast GET /api/tasks/add with format=json
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
-      const url = `${base}/api/tasks/add?title=${encodeURIComponent(task.title)}&category=${encodeURIComponent(task.category || 'work')}&priority=${encodeURIComponent(task.priority || 'medium')}&apiKey=${encodeURIComponent(key)}&format=json`;
-
-      const res = await fetch(url, { signal: controller.signal }).catch(() => null);
-      clearTimeout(timer);
-
-      if (res && res.ok) {
-        const body = await res.json().catch(() => null);
-        if (body && body.data && body.data.id) {
-          task.id = body.data.id;
-          saveStorage(STORAGE_KEY_TASKS, state.tasks);
-        }
-        return;
-      }
-
-      // 2. Fallback to POST /api/tasks
+      // Upsert using POST /api/tasks preserving task.id so no duplicates are created
       const payload = {
         id: task.id,
         title: task.title,
@@ -677,14 +671,21 @@
         is_completed: Boolean(task.is_completed),
         due_at: task.due_at || new Date().toISOString()
       };
-      await fetch(`${base}/api/tasks`, {
+
+      const res = await fetch(`${base}/api/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${key}`
         },
         body: JSON.stringify(payload)
-      }).catch(() => {});
+      }).catch(() => null);
+
+      if (res && res.ok) {
+        task._needsCloudSync = false;
+        task._isSynced = true;
+        saveStorage(STORAGE_KEY_TASKS, state.tasks);
+      }
     } catch (e) {
       console.warn('Offline task fallback:', e);
     }
@@ -725,14 +726,16 @@
         if (body && Array.isArray(body.data)) {
           const cloudTasks = body.data.map(t => ({
             ...t,
-            is_completed: Boolean(t.is_completed)
+            is_completed: Boolean(t.is_completed),
+            _isSynced: true,
+            _needsCloudSync: false
           }));
 
           // When cloud returns real data, dismiss sample placeholder tasks!
-          // Only keep genuine local tasks (created offline with UUID) that aren't on server yet
+          // Only keep genuine local tasks (created offline) that are marked as needing cloud push
           const cloudIds = new Set(cloudTasks.map(t => t.id));
           const unsyncedLocal = (state.tasks || []).filter(
-            t => !SAMPLE_TASK_IDS.has(t.id) && !cloudIds.has(t.id)
+            t => !SAMPLE_TASK_IDS.has(t.id) && !cloudIds.has(t.id) && t._needsCloudSync === true
           );
 
           state.tasks = [...cloudTasks, ...unsyncedLocal];
@@ -745,13 +748,326 @@
         }
       }
 
-      // 2. Sync any unsynced genuine local tasks in the background without blocking UI
-      const pendingPush = (state.tasks || []).filter(t => !SAMPLE_TASK_IDS.has(t.id));
+      // 2. ONLY push genuinely un-synced offline tasks - NEVER re-push tasks fetched from the server!
+      const pendingPush = (state.tasks || []).filter(
+        t => !SAMPLE_TASK_IDS.has(t.id) && t._needsCloudSync === true
+      );
       for (const t of pendingPush) {
         syncTaskToCloud(t).catch(() => {});
       }
     } catch (e) {
       console.warn('Cloud sync error:', e);
+    }
+  }
+
+  // --- Authentication Engine (Sign In & Sign Up) ---
+  function updateAuthUI() {
+    const nameSpan = document.getElementById('user-display-name');
+    const avatarIcon = document.getElementById('user-avatar-icon');
+    const accountName = document.getElementById('account-name-val');
+    const accountEmail = document.getElementById('account-email-val');
+    const accountId = document.getElementById('account-id-val');
+    const accountAvatarChar = document.getElementById('account-avatar-char');
+
+    if (state.user && state.token) {
+      const initial = (state.user.name || state.user.email || 'U').charAt(0).toUpperCase();
+      if (nameSpan) nameSpan.textContent = state.user.name ? state.user.name.split(' ')[0] : 'Account';
+      if (avatarIcon) avatarIcon.textContent = initial;
+      if (accountName) accountName.textContent = state.user.name || 'Luphonix User';
+      if (accountEmail) accountEmail.textContent = state.user.email || '';
+      if (accountId) accountId.textContent = state.user.id || '';
+      if (accountAvatarChar) accountAvatarChar.textContent = initial;
+    } else {
+      if (nameSpan) nameSpan.textContent = 'Sign In';
+      if (avatarIcon) avatarIcon.textContent = '👤';
+      if (accountName) accountName.textContent = 'Guest / Siri Default';
+      if (accountEmail) accountEmail.textContent = 'user@luphonix.local';
+      if (accountId) accountId.textContent = 'user_siri_default';
+      if (accountAvatarChar) accountAvatarChar.textContent = 'G';
+    }
+  }
+
+  async function loginUser(email, password) {
+    const base = getBackendBaseUrl();
+    const errorDiv = document.getElementById('auth-error-msg');
+    const submitBtn = document.getElementById('btn-submit-login');
+    if (errorDiv) errorDiv.style.display = 'none';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing in...';
+    }
+
+    try {
+      const res = await fetch(`${base}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Login failed. Please check your credentials.');
+      }
+
+      state.token = data.data.token;
+      state.user = data.data.user;
+      saveStorage(STORAGE_KEY_AUTH_TOKEN, state.token);
+      saveStorage(STORAGE_KEY_AUTH_USER, state.user);
+      updateAuthUI();
+      closeAllModals();
+      showToast(`Welcome back, ${state.user.name || 'User'}! 🎉`, 'success');
+
+      // Refresh cloud data for logged-in user
+      syncAllWithCloud(true);
+    } catch (err) {
+      if (errorDiv) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+      } else {
+        showToast(err.message, 'error');
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In to Luphonix';
+      }
+    }
+  }
+
+  async function registerUser(name, email, password) {
+    const base = getBackendBaseUrl();
+    const errorDiv = document.getElementById('auth-error-msg');
+    const submitBtn = document.getElementById('btn-submit-signup');
+    if (errorDiv) errorDiv.style.display = 'none';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating account...';
+    }
+
+    try {
+      const res = await fetch(`${base}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || (data.details ? data.details[0].message : 'Registration failed.'));
+      }
+
+      state.token = data.data.token;
+      state.user = data.data.user;
+      saveStorage(STORAGE_KEY_AUTH_TOKEN, state.token);
+      saveStorage(STORAGE_KEY_AUTH_USER, state.user);
+      updateAuthUI();
+      closeAllModals();
+      showToast(`Account created! Welcome, ${state.user.name}! 🚀`, 'success');
+
+      // Refresh cloud data
+      syncAllWithCloud(true);
+    } catch (err) {
+      if (errorDiv) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+      } else {
+        showToast(err.message, 'error');
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create My Account';
+      }
+    }
+  }
+
+  function logoutUser() {
+    state.token = null;
+    state.user = null;
+    localStorage.removeItem(STORAGE_KEY_AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_KEY_AUTH_USER);
+    updateAuthUI();
+    closeAllModals();
+    showToast('Signed out of Luphonix', 'info');
+    ensureApiKey(true);
+    syncAllWithCloud();
+  }
+
+  // --- Connected Devices & Live Request Feed Engine ---
+  async function fetchDevicesAndRequests() {
+    const base = getBackendBaseUrl();
+    try {
+      const [devRes, reqRes] = await Promise.all([
+        fetch(`${base}/api/devices`).catch(() => null),
+        fetch(`${base}/api/devices/requests?filter=${state.currentReqFilter || 'all'}`).catch(() => null)
+      ]);
+
+      if (devRes && devRes.ok) {
+        const devData = await devRes.json();
+        renderDevices(devData.devices || [], devData.currentDevice);
+        const onlineCountEl = document.getElementById('stat-devices-online');
+        if (onlineCountEl && devData.stats) {
+          onlineCountEl.textContent = devData.stats.onlineCount || 1;
+        }
+      }
+
+      if (reqRes && reqRes.ok) {
+        const reqData = await reqRes.json();
+        renderRequests(reqData.requests || [], reqData.stats);
+        const totalReqEl = document.getElementById('stat-requests-total');
+        if (totalReqEl && reqData.stats) {
+          totalReqEl.textContent = reqData.stats.totalLogs || 0;
+        }
+      }
+
+      const dbTasksEl = document.getElementById('stat-db-tasks-count');
+      if (dbTasksEl) {
+        dbTasksEl.textContent = state.tasks ? state.tasks.length : '--';
+      }
+    } catch (e) {
+      console.warn('Devices fetch error:', e);
+    }
+  }
+
+  function renderDevices(devices, currentDevice) {
+    const container = document.getElementById('devices-list-container');
+    if (!container) return;
+
+    if (!devices || devices.length === 0) {
+      const curr = currentDevice || { name: 'Web Browser Client', ip: '127.0.0.1', type: 'desktop' };
+      devices = [{
+        id: 'curr_dev',
+        name: curr.name,
+        type: curr.type,
+        ip: curr.ip,
+        status: 'online',
+        lastSeen: new Date().toISOString(),
+        requestCount: 1,
+        lastEndpoint: 'GET /api/devices'
+      }];
+    }
+
+    container.innerHTML = devices.map(dev => {
+      const isOnline = dev.status === 'online';
+      const statusClass = isOnline ? 'device-badge-active' : 'device-badge-idle';
+      const statusText = isOnline ? '● Online' : '○ Idle';
+      const isCurrent = currentDevice && (dev.ip === currentDevice.ip || dev.name === currentDevice.name);
+
+      let icon = '📱';
+      if (dev.type === 'desktop') icon = '💻';
+      else if (dev.type === 'siri') icon = '🎙️';
+      else if (dev.type === 'terminal') icon = '⚡';
+
+      const timeAgo = formatTimeAgo(dev.lastSeen);
+
+      return `
+        <div class="device-card">
+          <div class="device-card-header">
+            <div style="display: flex; align-items: center;">
+              <div class="device-icon-wrap">${icon}</div>
+              <div class="device-details">
+                <div class="device-title">
+                  ${escapeHTML(dev.name)}
+                  ${isCurrent ? '<span class="device-badge-current" style="margin-left: 6px;">This Device</span>' : ''}
+                </div>
+                <div class="device-subtitle">IP: <code>${escapeHTML(dev.ip)}</code></div>
+              </div>
+            </div>
+            <span class="${statusClass}">${statusText}</span>
+          </div>
+          <div class="device-meta-row">
+            <span>Last Activity: <strong>${timeAgo}</strong></span>
+            <span>Requests: <strong>${dev.requestCount || 1}</strong></span>
+            <span>Endpoint: <code>${escapeHTML(dev.lastEndpoint || 'Active')}</code></span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderRequests(requests, stats) {
+    const container = document.getElementById('requests-feed-container');
+    if (!container) return;
+
+    if (!requests || requests.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 30px 10px; color: var(--text-sub);">
+          <div style="font-size: 24px; margin-bottom: 6px;">📡</div>
+          <div>No requests matching this filter yet. Send a request or use Siri!</div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = requests.map(req => {
+      const isOk = req.status >= 200 && req.status < 300;
+      const statusClass = isOk ? 'ok' : 'err';
+      const isTaskAdd = req.isTaskAdd;
+
+      let paramSummary = '';
+      if (req.params && Object.keys(req.params).length > 0) {
+        paramSummary = Object.entries(req.params)
+          .map(([k, v]) => `${escapeHTML(k)}=<strong style="color: #38BDF8;">${escapeHTML(v)}</strong>`)
+          .join('&nbsp; ');
+      }
+
+      return `
+        <div class="request-row ${isTaskAdd ? 'task-add-row' : ''}">
+          <div class="request-row-top">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="method-tag ${req.method}">${req.method}</span>
+              <span class="status-tag ${statusClass}">${req.status}</span>
+              <span class="action-pill-tag ${isTaskAdd ? 'task-warn' : ''}">${escapeHTML(req.actionTag)}</span>
+            </div>
+            <span style="font-family: monospace; font-size: 11px; color: var(--text-muted);">${req.timeStr || ''}</span>
+          </div>
+          <div class="request-path-text">${escapeHTML(req.path)}</div>
+          <div class="request-meta-text">
+            <span>Client: <strong style="color: #CBD5E1;">${escapeHTML(req.device)}</strong></span>
+            <span>IP: <code>${escapeHTML(req.ip)}</code></span>
+            ${req.durationMs ? `<span>${req.durationMs}ms</span>` : ''}
+            ${paramSummary ? `<span>Params: ${paramSummary}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function formatTimeAgo(isoString) {
+    if (!isoString) return 'Just now';
+    const diff = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
+    if (diff < 10) return 'Just now';
+    if (diff < 60) return `${diff}s ago`;
+    const mins = Math.floor(diff / 60);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    return `${hrs}h ago`;
+  }
+
+  async function deduplicateDbTasks() {
+    const base = getBackendBaseUrl();
+    showToast('Cleaning duplicate tasks in DB...', 'info');
+    try {
+      const res = await fetch(`${base}/api/devices/deduplicate-tasks`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        syncAllWithCloud(true);
+        fetchDevicesAndRequests();
+      } else {
+        showToast(data.error || 'Deduplication failed', 'error');
+      }
+    } catch (e) {
+      showToast('Could not reach backend for cleanup', 'error');
+    }
+  }
+
+  async function clearRequestLogs() {
+    const base = getBackendBaseUrl();
+    try {
+      await fetch(`${base}/api/devices/requests`, { method: 'DELETE' });
+      showToast('Request logs cleared', 'info');
+      fetchDevicesAndRequests();
+    } catch (e) {
+      showToast('Failed to clear request logs', 'error');
     }
   }
 
@@ -852,6 +1168,18 @@
         item.classList.add('active');
       }
     });
+
+    if (viewName === 'devices') {
+      fetchDevicesAndRequests();
+      if (!state.devicePollTimer) {
+        state.devicePollTimer = setInterval(fetchDevicesAndRequests, 3000);
+      }
+    } else {
+      if (state.devicePollTimer) {
+        clearInterval(state.devicePollTimer);
+        state.devicePollTimer = null;
+      }
+    }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1134,6 +1462,122 @@
     }, 15000);
 
     setupSiriCopyButtons();
+
+    // --- Authentication Event Handlers ---
+    const userAuthPill = document.getElementById('user-auth-pill');
+    if (userAuthPill) {
+      userAuthPill.addEventListener('click', () => {
+        if (state.user && state.token) {
+          openModal('modal-account');
+        } else {
+          openModal('modal-auth');
+        }
+      });
+    }
+
+    const tabBtnLogin = document.getElementById('tab-btn-login');
+    const tabBtnSignup = document.getElementById('tab-btn-signup');
+    const formLogin = document.getElementById('form-auth-login');
+    const formSignup = document.getElementById('form-auth-signup');
+    const authTitle = document.getElementById('auth-modal-title');
+    const authError = document.getElementById('auth-error-msg');
+
+    if (tabBtnLogin && tabBtnSignup) {
+      tabBtnLogin.addEventListener('click', () => {
+        tabBtnLogin.classList.add('active');
+        tabBtnSignup.classList.remove('active');
+        if (formLogin) formLogin.style.display = 'block';
+        if (formSignup) formSignup.style.display = 'none';
+        if (authTitle) authTitle.textContent = 'Sign In to Luphonix';
+        if (authError) authError.style.display = 'none';
+      });
+
+      tabBtnSignup.addEventListener('click', () => {
+        tabBtnSignup.classList.add('active');
+        tabBtnLogin.classList.remove('active');
+        if (formSignup) formSignup.style.display = 'block';
+        if (formLogin) formLogin.style.display = 'none';
+        if (authTitle) authTitle.textContent = 'Create New Account';
+        if (authError) authError.style.display = 'none';
+      });
+    }
+
+    if (formLogin) {
+      formLogin.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email')?.value.trim();
+        const password = document.getElementById('login-password')?.value;
+        if (email && password) {
+          loginUser(email, password);
+        }
+      });
+    }
+
+    if (formSignup) {
+      formSignup.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('signup-name')?.value.trim();
+        const email = document.getElementById('signup-email')?.value.trim();
+        const password = document.getElementById('signup-password')?.value;
+        if (name && email && password) {
+          registerUser(name, email, password);
+        }
+      });
+    }
+
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+      btnLogout.addEventListener('click', logoutUser);
+    }
+
+    // --- Connected Devices & Request Monitor Event Handlers ---
+    const btnRefreshDevices = document.getElementById('btn-refresh-devices');
+    if (btnRefreshDevices) {
+      btnRefreshDevices.addEventListener('click', () => {
+        showToast('Refreshing devices & live requests...', 'info');
+        fetchDevicesAndRequests();
+      });
+    }
+
+    const btnPingDevice = document.getElementById('btn-ping-device');
+    if (btnPingDevice) {
+      btnPingDevice.addEventListener('click', async () => {
+        const base = getBackendBaseUrl();
+        const start = performance.now();
+        try {
+          const res = await fetch(`${base}/api/devices/ping`, { method: 'POST' });
+          const latency = Math.round(performance.now() - start);
+          if (res.ok) {
+            showToast(`⚡ Device Ping: ${latency}ms latency`, 'success');
+            fetchDevicesAndRequests();
+          } else {
+            showToast('Device Ping failed', 'error');
+          }
+        } catch {
+          showToast('Device Ping failed - offline', 'error');
+        }
+      });
+    }
+
+    const btnDeduplicate = document.getElementById('btn-deduplicate-tasks');
+    if (btnDeduplicate) {
+      btnDeduplicate.addEventListener('click', deduplicateDbTasks);
+    }
+
+    const btnClearReqLogs = document.getElementById('btn-clear-request-logs');
+    if (btnClearReqLogs) {
+      btnClearReqLogs.addEventListener('click', clearRequestLogs);
+    }
+
+    // Request filter pills
+    document.querySelectorAll('[data-req-filter]').forEach((pill) => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('[data-req-filter]').forEach((p) => p.classList.remove('active'));
+        pill.classList.add('active');
+        state.currentReqFilter = pill.dataset.reqFilter || 'all';
+        fetchDevicesAndRequests();
+      });
+    });
   }
 
   // --- Service Worker Registration ---
@@ -1155,11 +1599,15 @@
     renderTasks();
     renderReminders();
     initEvents();
+    updateAuthUI();
     ensureApiKey();
     registerServiceWorker();
 
     // Instant sync with cloud on load so Siri & terminal tasks show up right away
     setTimeout(syncAllWithCloud, 200);
+
+    // Initial devices & requests pre-fetch
+    setTimeout(fetchDevicesAndRequests, 400);
 
     // Health ping test on load
     setTimeout(testBackendPing, 800);
