@@ -810,15 +810,21 @@
     if (errorDiv) errorDiv.style.display = 'none';
     if (submitBtn) submitBtn.disabled = true;
     if (btnText) btnText.textContent = 'Signing in...';
+    else if (submitBtn) submitBtn.textContent = 'Signing in...';
     if (btnSpinner) btnSpinner.classList.remove('hidden');
+
+    const controller = new AbortController();
+    const timeoutTimer = setTimeout(() => controller.abort(), 15000);
 
     try {
       const res = await fetch(`${base}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       });
-      const data = await res.json();
+      clearTimeout(timeoutTimer);
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Invalid email or password. Please try again.');
       }
@@ -834,12 +840,17 @@
       // Refresh cloud data for logged-in user
       syncAllWithCloud(true);
     } catch (err) {
-      if (errorText) errorText.textContent = err.message;
+      clearTimeout(timeoutTimer);
+      const msg = err.name === 'AbortError' ? 'Server timed out. Please try again.' : (err.message || 'Login failed.');
+      if (errorText) errorText.textContent = msg;
+      else if (errorDiv) errorDiv.textContent = msg;
       if (errorDiv) errorDiv.style.display = 'flex';
-      showToast(err.message, 'error');
+      showToast(msg, 'error');
     } finally {
+      clearTimeout(timeoutTimer);
       if (submitBtn) submitBtn.disabled = false;
       if (btnText) btnText.textContent = 'Sign In to Luphonix';
+      else if (submitBtn) submitBtn.textContent = 'Sign In to Luphonix';
       if (btnSpinner) btnSpinner.classList.add('hidden');
     }
   }
@@ -855,16 +866,22 @@
     if (errorDiv) errorDiv.style.display = 'none';
     if (submitBtn) submitBtn.disabled = true;
     if (btnText) btnText.textContent = 'Creating account...';
+    else if (submitBtn) submitBtn.textContent = 'Creating account...';
     if (btnSpinner) btnSpinner.classList.remove('hidden');
+
+    const controller = new AbortController();
+    const timeoutTimer = setTimeout(() => controller.abort(), 15000);
 
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       const res = await fetch(`${base}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, timezone })
+        body: JSON.stringify({ name, email, password, timezone }),
+        signal: controller.signal,
       });
-      const data = await res.json();
+      clearTimeout(timeoutTimer);
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
         throw new Error(data.error || (data.details ? data.details[0].message : 'Registration failed.'));
       }
@@ -880,12 +897,17 @@
       // Refresh cloud data
       syncAllWithCloud(true);
     } catch (err) {
-      if (errorText) errorText.textContent = err.message;
+      clearTimeout(timeoutTimer);
+      const msg = err.name === 'AbortError' ? 'Server timed out. Please try again.' : (err.message || 'Registration failed.');
+      if (errorText) errorText.textContent = msg;
+      else if (errorDiv) errorDiv.textContent = msg;
       if (errorDiv) errorDiv.style.display = 'flex';
-      showToast(err.message, 'error');
+      showToast(msg, 'error');
     } finally {
+      clearTimeout(timeoutTimer);
       if (submitBtn) submitBtn.disabled = false;
       if (btnText) btnText.textContent = 'Create My Account';
+      else if (submitBtn) submitBtn.textContent = 'Create My Account';
       if (btnSpinner) btnSpinner.classList.add('hidden');
     }
   }
