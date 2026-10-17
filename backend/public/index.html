@@ -15,8 +15,9 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="manifest" href="/manifest.json">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="/style.css?v=3.1">
+  <!-- Styles & Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/style.css?v=5.0">
 </head>
 <body>
   <div id="app-container">
@@ -28,7 +29,7 @@
       </div>
       <div class="header-actions">
         <div class="user-auth-pill" id="user-auth-pill" title="Account / Sign In">
-          <span class="user-avatar-dot" id="user-avatar-icon">👤</span>
+          <span class="user-avatar-dot" id="user-avatar-icon"><i class="fa-solid fa-user"></i></span>
           <span id="user-display-name">Sign In</span>
         </div>
         <div class="status-pill" id="connection-pill">
@@ -36,10 +37,7 @@
           <span id="connection-text">Cloud Sync</span>
         </div>
         <button class="header-icon-btn" id="btn-quick-add" aria-label="Quick Add" title="Quick Add">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
+          <i class="fa-solid fa-plus" style="font-size: 15px;"></i>
         </button>
       </div>
     </header>
@@ -107,7 +105,7 @@
             <div class="stat-label">Completed</div>
           </div>
           <div class="stat-box">
-            <div class="stat-val" style="color: #F59E0B;" id="stat-streak-val">🔥 1</div>
+            <div class="stat-val" style="color: #F59E0B;" id="stat-streak-val"><i class="fa-solid fa-fire-flame-curved" style="color: #F97316; margin-right: 4px;"></i>1</div>
             <div class="stat-label">Day Streak</div>
           </div>
         </div>
@@ -115,7 +113,7 @@
         <!-- Today's Priority Tasks -->
         <div class="section-header">
           <h3 class="section-title">
-            <span>📋</span> Today's Priorities
+            <i class="fa-solid fa-clipboard-list" style="color: #38BDF8; margin-right: 6px;"></i> Today's Priorities
           </h3>
           <span class="section-link" id="link-view-all-tasks">View All →</span>
         </div>
@@ -130,10 +128,10 @@
           <h2 class="section-title">My Tasks</h2>
           <div style="display: flex; gap: 8px;">
             <button class="header-icon-btn" id="btn-sync-tasks-cloud" style="width: 32px; height: 32px;" title="Sync with Siri Cloud">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <i class="fa-solid fa-arrows-rotate" style="font-size: 13px;"></i>
             </button>
             <button class="header-icon-btn" id="btn-add-task-modal" style="width: 32px; height: 32px;" title="Add Task">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <i class="fa-solid fa-plus" style="font-size: 14px;"></i>
             </button>
           </div>
         </div>
@@ -176,7 +174,7 @@
                       stroke-dasharray="326.72" stroke-dashoffset="326.72" />
             </svg>
             <div class="ring-content">
-              <span class="ring-water-icon" style="font-size: 28px;">🌊</span>
+              <span class="ring-water-icon" style="font-size: 26px; color: #06B6D4;"><i class="fa-solid fa-droplet"></i></span>
               <div class="ring-val-current" id="hyd-water-val" style="font-size: 38px;">0</div>
               <div class="ring-val-goal">of <span id="hyd-water-goal-text">2,000</span> ml</div>
               <span class="ring-percentage-pill" id="hyd-water-percent">0%</span>
@@ -194,7 +192,7 @@
         <!-- 7-Day Weekly Bar Chart -->
         <div class="glass-card">
           <div class="section-header" style="margin: 0 0 8px 0;">
-            <h3 class="section-title" style="font-size: 15px;">📊 Past 7 Days</h3>
+            <h3 class="section-title" style="font-size: 15px;"><i class="fa-solid fa-chart-simple" style="color: #38BDF8; margin-right: 6px;"></i> Past 7 Days</h3>
             <span style="font-size: 12px; color: var(--accent-cyan);" id="hyd-weekly-average">Avg: 0 ml</span>
           </div>
           <div class="chart-container" id="weekly-chart-bars">
@@ -204,7 +202,7 @@
 
         <!-- Today's Intake History Log -->
         <div class="section-header">
-          <h3 class="section-title" style="font-size: 15px;">🕒 Today's Drink Logs</h3>
+          <h3 class="section-title" style="font-size: 15px;"><i class="fa-solid fa-clock-rotate-left" style="color: #38BDF8; margin-right: 6px;"></i> Today's Drink Logs</h3>
           <span class="section-link" id="btn-clear-water-logs" style="color: var(--accent-rose); font-size: 12px;">Reset Today</span>
         </div>
         <div id="water-logs-list">
@@ -217,7 +215,7 @@
         <div class="section-header" style="margin-top: 0;">
           <h2 class="section-title">Reminders</h2>
           <button class="header-icon-btn" id="btn-add-reminder-modal" style="width: 32px; height: 32px;" title="Add Reminder">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <i class="fa-solid fa-plus" style="font-size: 14px;"></i>
           </button>
         </div>
 
@@ -237,7 +235,7 @@
         </div>
 
         <div class="section-header">
-          <h3 class="section-title">🗣️ Ready-To-Use Siri Phrases</h3>
+          <h3 class="section-title"><i class="fa-solid fa-comments" style="color: #38BDF8; margin-right: 6px;"></i> Ready-To-Use Siri Phrases</h3>
         </div>
 
         <!-- Shortcut 1: Log Water -->
@@ -247,14 +245,14 @@
             <span style="font-size: 11px; color: var(--accent-cyan); font-weight: 600;">Siri Voice</span>
           </div>
           <div class="siri-phrase-box">
-            <span>🎙️</span>
+            <span><i class="fa-solid fa-microphone-lines" style="color: #38BDF8;"></i></span>
             <span>"Hey Siri, log 250 ml in Luphonix"</span>
           </div>
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
             Siri triggers your Vercel cloud API and immediately updates your water ring!
           </p>
           <button class="btn-secondary" id="btn-copy-siri-water" style="padding: 8px 12px; font-size: 13px;">
-            📋 Copy API Webhook URL
+            <i class="fa-solid fa-copy" style="margin-right: 6px;"></i> Copy API Webhook URL
           </button>
         </div>
 
@@ -265,14 +263,14 @@
             <span style="font-size: 11px; color: var(--accent-purple); font-weight: 600;">Siri Voice</span>
           </div>
           <div class="siri-phrase-box">
-            <span>🎙️</span>
+            <span><i class="fa-solid fa-microphone-lines" style="color: #38BDF8;"></i></span>
             <span>"Hey Siri, what are my tasks in Luphonix?"</span>
           </div>
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
             Siri reads aloud your remaining pending tasks for today.
           </p>
           <button class="btn-secondary" id="btn-copy-siri-tasks" style="padding: 8px 12px; font-size: 13px;">
-            📋 Copy API Webhook URL
+            <i class="fa-solid fa-copy" style="margin-right: 6px;"></i> Copy API Webhook URL
           </button>
         </div>
 
@@ -283,21 +281,21 @@
             <span style="font-size: 11px; color: #10B981; font-weight: 600;">Siri Voice</span>
           </div>
           <div class="siri-phrase-box">
-            <span>🎙️</span>
+            <span><i class="fa-solid fa-microphone-lines" style="color: #38BDF8;"></i></span>
             <span>"Hey Siri, mark study completed in Luphonix"</span>
           </div>
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
             Siri instantly marks your task as completed in cloud &amp; on iPhone.
           </p>
           <button class="btn-secondary" id="btn-copy-siri-complete" style="padding: 8px 12px; font-size: 13px;">
-            📋 Copy API Webhook URL
+            <i class="fa-solid fa-copy" style="margin-right: 6px;"></i> Copy API Webhook URL
           </button>
         </div>
 
         <!-- How to Add to iPhone Shortcuts App Guide -->
         <div class="glass-card">
           <h3 style="font-family: var(--font-heading); font-size: 16px; font-weight: 700; margin-bottom: 8px;">
-            📱 60-Second Setup in iPhone "Shortcuts" App
+            <i class="fa-solid fa-mobile-screen-button" style="color: #38BDF8; margin-right: 6px;"></i> 60-Second Setup in iPhone "Shortcuts" App
           </h3>
           <ol style="font-size: 13px; color: var(--text-muted); padding-left: 18px; line-height: 1.7;">
             <li>Open the built-in <strong>Shortcuts</strong> app on your iPhone 16 Pro.</li>
@@ -315,7 +313,7 @@
         <div class="section-header" style="margin-top: 0;">
           <h2 class="section-title">Connected Devices</h2>
           <button class="header-icon-btn" id="btn-refresh-devices" style="width: 32px; height: 32px;" title="Refresh Devices & Requests">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <i class="fa-solid fa-arrows-rotate" style="font-size: 13px;"></i>
           </button>
         </div>
 
@@ -337,8 +335,8 @@
 
         <!-- Active Connected Devices List -->
         <div class="section-header">
-          <h3 class="section-title" style="font-size: 15px;">📱 Active Device Sessions</h3>
-          <span class="section-link" id="btn-ping-device" style="font-size: 12px; cursor: pointer;">⚡ Ping Device</span>
+          <h3 class="section-title" style="font-size: 15px;"><i class="fa-solid fa-mobile-screen-button" style="color: #8B5CF6; margin-right: 6px;"></i> Active Device Sessions</h3>
+          <span class="section-link" id="btn-ping-device" style="font-size: 12px; cursor: pointer;"><i class="fa-solid fa-bolt" style="margin-right: 4px;"></i> Ping Device</span>
         </div>
         <div id="devices-list-container">
           <!-- Dynamically populated -->
@@ -346,13 +344,13 @@
 
         <!-- Client Request Inspector -->
         <div class="section-header" style="margin-top: 24px;">
-          <h3 class="section-title" style="font-size: 15px;">🔍 Live Client Request Inspector</h3>
+          <h3 class="section-title" style="font-size: 15px;"><i class="fa-solid fa-tower-broadcast" style="color: #06B6D4; margin-right: 6px;"></i> Live Client Request Inspector</h3>
           <span style="font-size: 11px; color: var(--accent-emerald); font-weight: 600;">● Live Stream</span>
         </div>
 
         <!-- Diagnostic Alert Banner -->
         <div class="diag-box diag-box-success" id="diag-banner-box">
-          <span style="font-size: 18px;">🛡️</span>
+          <span style="font-size: 18px;"><i class="fa-solid fa-shield-halved" style="color: #34D399;"></i></span>
           <div>
             <div style="font-weight: 700; margin-bottom: 2px;">Continuous Task Addition Loop: Neutralized &amp; Guarded</div>
             <p style="font-size: 12px; opacity: 0.9;">
@@ -366,10 +364,10 @@
           <!-- Action Buttons Bar -->
           <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
             <button class="btn-primary" id="btn-deduplicate-tasks" style="padding: 8px 12px; font-size: 12px; width: auto; background: linear-gradient(135deg, #10B981 0%, #059669 100%);">
-              🧹 Clean Duplicate Tasks in DB
+              <i class="fa-solid fa-broom" style="margin-right: 6px;"></i> Clean Duplicate Tasks in DB
             </button>
             <button class="btn-secondary" id="btn-clear-request-logs" style="padding: 8px 12px; font-size: 12px; width: auto;">
-              🗑️ Clear Feed
+              <i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> Clear Feed
             </button>
           </div>
 
@@ -399,7 +397,7 @@
         <!-- Install PWA Card for iPhone -->
         <div class="glass-card" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%); border-color: rgba(6, 182, 212, 0.35);">
           <div style="display: flex; gap: 12px; align-items: center;">
-            <span style="font-size: 32px;">📲</span>
+            <span style="font-size: 28px; color: #38BDF8;"><i class="fa-solid fa-mobile-screen-button"></i></span>
             <div>
               <h3 style="font-family: var(--font-heading); font-size: 16px; font-weight: 700;">Install on iPhone 16 Pro</h3>
               <p style="font-size: 12px; color: #CBD5E1; margin-top: 2px;">
@@ -416,7 +414,7 @@
         <div class="glass-card" style="border-color: rgba(6, 182, 212, 0.35); background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <h3 style="font-family: var(--font-heading); font-size: 16px; font-weight: 700; color: #38BDF8;">
-              🔑 Siri Shortcuts & Webhook API Key
+              <i class="fa-solid fa-key" style="color: #F59E0B; margin-right: 6px;"></i> Siri Shortcuts & Webhook API Key
             </h3>
             <span class="ring-percentage-pill" style="font-size: 10px; background: rgba(56, 189, 248, 0.2); color: #38BDF8;">Active</span>
           </div>
@@ -428,26 +426,26 @@
             <div style="display: flex; gap: 8px;">
               <input type="text" class="form-input" id="setting-webhook-api-key" readonly style="font-family: monospace; font-size: 11px; letter-spacing: 0.5px;" value="Loading...">
               <button class="btn-secondary" id="btn-copy-token" style="width: auto; padding: 0 16px; white-space: nowrap; font-weight: 600;">
-                📋 Copy
+                <i class="fa-solid fa-copy" style="margin-right: 6px;"></i> Copy
               </button>
             </div>
           </div>
           <button class="btn-secondary" id="btn-regenerate-token" style="padding: 8px 12px; font-size: 12px; opacity: 0.85;">
-            🔄 Refresh / Re-fetch Key
+            <i class="fa-solid fa-arrows-rotate" style="margin-right: 6px;"></i> Refresh / Re-fetch Key
           </button>
         </div>
 
         <!-- Backend Configuration -->
         <div class="glass-card">
           <h3 style="font-family: var(--font-heading); font-size: 16px; font-weight: 700; margin-bottom: 12px;">
-            🌐 Cloud Backend API (Vercel)
+            <i class="fa-solid fa-cloud" style="color: #38BDF8; margin-right: 6px;"></i> Cloud Backend API (Vercel)
           </h3>
           <div class="form-group">
             <label class="form-label" for="setting-backend-url">Backend Base URL</label>
             <input type="url" class="form-input" id="setting-backend-url" placeholder="https://your-app.vercel.app" autocomplete="off">
           </div>
           <button class="btn-secondary" id="btn-test-backend-ping" style="padding: 10px; font-size: 13px;">
-            ⚡ Test Connection & Latency
+            <i class="fa-solid fa-bolt" style="margin-right: 6px;"></i> Test Connection & Latency
           </button>
           <div id="backend-ping-result" style="font-size: 12px; margin-top: 8px; font-weight: 600;"></div>
         </div>
@@ -456,7 +454,7 @@
         <!-- Preferences -->
         <div class="glass-card">
           <h3 style="font-family: var(--font-heading); font-size: 16px; font-weight: 700; margin-bottom: 12px;">
-            ⚙️ Preferences
+            <i class="fa-solid fa-sliders" style="color: #38BDF8; margin-right: 6px;"></i> Preferences
           </h3>
           <div class="form-group">
             <label class="form-label" for="setting-daily-water-goal">Daily Water Goal (ml)</label>
@@ -477,7 +475,7 @@
         <!-- Data Reset -->
         <div class="glass-card" style="border-color: rgba(244, 63, 94, 0.2);">
           <h3 style="font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: var(--accent-rose); margin-bottom: 8px;">
-            Danger Zone
+            <i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-rose); margin-right: 6px;"></i> Danger Zone
           </h3>
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
             Clears local cache and resets task and water sample logs.
@@ -493,58 +491,37 @@
     <!-- Floating Glass Bottom Navigation -->
     <nav class="app-navbar" id="bottom-navbar">
       <button class="nav-item active" data-view="dashboard" id="nav-btn-dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-          <polyline points="9 22 9 12 15 12 15 22"></polyline>
-        </svg>
+        <i class="fa-solid fa-house"></i>
         <span>Today</span>
       </button>
 
       <button class="nav-item" data-view="tasks" id="nav-btn-tasks">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 11l3 3L22 4"></path>
-          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-        </svg>
+        <i class="fa-solid fa-list-check"></i>
         <span>Tasks</span>
       </button>
 
       <button class="nav-item" data-view="hydration" id="nav-btn-hydration">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-        </svg>
+        <i class="fa-solid fa-droplet"></i>
         <span>Hydration</span>
       </button>
 
       <button class="nav-item" data-view="reminders" id="nav-btn-reminders">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-        </svg>
+        <i class="fa-solid fa-bell"></i>
         <span>Reminders</span>
       </button>
 
       <button class="nav-item" data-view="siri" id="nav-btn-siri">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          <line x1="12" y1="19" x2="12" y2="22"></line>
-        </svg>
+        <i class="fa-solid fa-microphone-lines"></i>
         <span>Siri</span>
       </button>
 
       <button class="nav-item" data-view="devices" id="nav-btn-devices">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="5" y="2" width="14" height="20" rx="2" ry="2" stroke="currentColor" stroke-width="2"></rect>
-          <line x1="12" y1="18" x2="12.01" y2="18" stroke="currentColor" stroke-width="2.5"></line>
-        </svg>
+        <i class="fa-solid fa-mobile-screen-button"></i>
         <span>Devices</span>
       </button>
 
       <button class="nav-item" data-view="settings" id="nav-btn-settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
+        <i class="fa-solid fa-gear"></i>
         <span>Settings</span>
       </button>
     </nav>
@@ -681,7 +658,7 @@
 
         <!-- Error Feedback Banner -->
         <div id="auth-error-msg" class="auth-error-banner" style="display: none;">
-          <span>⚠️</span>
+          <i class="fa-solid fa-circle-exclamation" style="margin-right: 6px;"></i>
           <span id="auth-error-text">Authentication failed</span>
         </div>
 
@@ -692,7 +669,7 @@
               <span>Email Address</span>
             </label>
             <div class="input-icon-wrapper">
-              <span class="input-leading-icon">✉️</span>
+              <span class="input-leading-icon"><i class="fa-solid fa-envelope"></i></span>
               <input type="email" class="form-input with-icon" id="login-email" placeholder="name@example.com" required autocomplete="email">
             </div>
           </div>
@@ -701,9 +678,9 @@
               <span>Password</span>
             </label>
             <div class="input-icon-wrapper">
-              <span class="input-leading-icon">🔒</span>
+              <span class="input-leading-icon"><i class="fa-solid fa-lock"></i></span>
               <input type="password" class="form-input with-icon with-trailing" id="login-password" placeholder="••••••••" required autocomplete="current-password">
-              <button type="button" class="pwd-toggle-btn" data-target="login-password" aria-label="Toggle password visibility">👁️</button>
+              <button type="button" class="pwd-toggle-btn" data-target="login-password" aria-label="Toggle password visibility"><i class="fa-regular fa-eye"></i></button>
             </div>
           </div>
           <button type="submit" class="btn-primary auth-submit-btn" id="btn-submit-login">
@@ -723,7 +700,7 @@
               <span>Your Full Name</span>
             </label>
             <div class="input-icon-wrapper">
-              <span class="input-leading-icon">👤</span>
+              <span class="input-leading-icon"><i class="fa-solid fa-user"></i></span>
               <input type="text" class="form-input with-icon" id="signup-name" placeholder="Dhyey Khanpara" required autocomplete="name">
             </div>
           </div>
@@ -732,7 +709,7 @@
               <span>Email Address</span>
             </label>
             <div class="input-icon-wrapper">
-              <span class="input-leading-icon">✉️</span>
+              <span class="input-leading-icon"><i class="fa-solid fa-envelope"></i></span>
               <input type="email" class="form-input with-icon" id="signup-email" placeholder="name@example.com" required autocomplete="email">
             </div>
           </div>
@@ -741,9 +718,9 @@
               <span>Password (min. 6 characters)</span>
             </label>
             <div class="input-icon-wrapper">
-              <span class="input-leading-icon">🔒</span>
+              <span class="input-leading-icon"><i class="fa-solid fa-lock"></i></span>
               <input type="password" class="form-input with-icon with-trailing" id="signup-password" minlength="6" placeholder="••••••••" required autocomplete="new-password">
-              <button type="button" class="pwd-toggle-btn" data-target="signup-password" aria-label="Toggle password visibility">👁️</button>
+              <button type="button" class="pwd-toggle-btn" data-target="signup-password" aria-label="Toggle password visibility"><i class="fa-regular fa-eye"></i></button>
             </div>
           </div>
           <button type="submit" class="btn-primary auth-submit-btn" id="btn-submit-signup">
