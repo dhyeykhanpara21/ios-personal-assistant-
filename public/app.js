@@ -383,7 +383,7 @@
     return `
       <div class="task-item ${task.is_completed ? 'completed' : ''}" data-task-id="${task.id}">
         <button class="task-checkbox-btn" data-toggle-task="${task.id}" aria-label="Toggle task">
-          <span class="task-checkbox-check">✓</span>
+          <span class="task-checkbox-check"><i class="fa-solid fa-check" style="font-size: 11px;"></i></span>
         </button>
         <div class="task-content">
           <div class="task-title">${escapeHTML(task.title)}</div>
@@ -392,7 +392,7 @@
             <span class="category-tag">${categoryName}</span>
           </div>
         </div>
-        <button class="task-delete-btn" data-delete-task="${task.id}" title="Delete task">✕</button>
+        <button class="task-delete-btn" data-delete-task="${task.id}" title="Delete task"><i class="fa-solid fa-xmark" style="font-size: 12px;"></i></button>
       </div>
     `;
   }
@@ -1569,10 +1569,10 @@
         if (!input) return;
         if (input.type === 'password') {
           input.type = 'text';
-          btn.textContent = '🔒';
+          btn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
         } else {
           input.type = 'password';
-          btn.textContent = '👁️';
+          btn.innerHTML = '<i class="fa-regular fa-eye"></i>';
         }
       });
     });
